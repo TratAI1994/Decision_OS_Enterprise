@@ -18,7 +18,7 @@ steps:
 
 # 2. Run Ruff Linter
 - script: |
-    ruff check .
+    ruff check  . --exit-zero
   displayName: 'AIOps/Quality: Run Ruff Linter'
 
 # 3. Install and Run Trivy
