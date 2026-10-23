@@ -1,73 +1,45 @@
-# Decision OS R8 — Verified Outcome Economics (incremental release)
+# R9 Guided Control Plane — Decision OS
 
-## Scope
-A narrow, read/write finance benefit event stream tied to authorized Decision OS decisions. It **does not** replace authoritative funding approvals, independently authenticate GL records, or prove causal attribution. The backend requires a `finance` role for independent reconciliation; admin is **not** implicitly a controller.
+## What changed
 
-Files to overlay in `D:\Users\atmm1\Decision_OS_Enterprise`:
+This is an incremental, **UI-only replacement** for `ui/outcome_economics.py`. It is visually inspired by the dark workflow diagrams of managed pipeline consoles, not an AWS asset or a replica. It preserves the existing R8 API paths, finance-only attestation and reporter/attester separation of duties, as implemented in R8's backend. It does not change the backend, API routes, migrations or `ui/app.py`.
 
-- `backend/outcome_economics.py` — new finance benefit event API
-- `backend/migration_r8.py` — additive `di_outcome_events` table and PostgreSQL UPDATE/DELETE rejection trigger
-- `backend/api.py` — R7 baseline + two-line router registration
-- `ui/outcome_economics.py` — new executive UI
-- `ui/app.py` — R7 baseline + navigation/dispatcher
-- `tests/test_outcome_economics.py` — focused FastAPI tests
+- Dark console header with status context and a connected Graphviz workflow map (expected value → observation → finance review → event replay)
+- Clickable workflow stages, each backed by existing R8 forms and API calls
+- Right-side contextual evidence advisor, questions and prerequisites
+- Explicit assurance/readiness panel that **withholds** snapshot, kill-criteria and independently validated ERP/GL claims
+- Deterministic stage-progress calculation based on retrieved authoritative events
+- All navigational behavior uses Streamlit controls; the graph is a depiction, not a clickable editor
 
-**If you have modified `backend/api.py` or `ui/app.py` since R7, don't overwrite them.** Merge only:
+## Installation (existing R8 must already work)
 
-```python
-# append in backend/api.py after other routes:
-from .outcome_economics import build_router as build_outcome_router
-app.include_router(build_outcome_router(identity,session,require))
-
-# ui/app.py: add 'Outcome Economics' to PAGES and Decision Infrastructure section;
-elif page=='Outcome Economics':
-    from ui.outcome_economics import render as render_outcome_economics
-    render_outcome_economics(api=api,navigate=navigate_to)
-```
-
-## Windows install
-
-Back up DB and files. Unzip into project root. Verify you have a `finance` identity configured in your server's `DECISION_OS_IDENTITIES` JSON registry. Never add an arbitrary fake finance credential or expose it to other users.
+1. Back up `D:\Users\atmm1\Decision_OS_Enterprise\ui\outcome_economics.py`.
+2. Copy the contained `ui/outcome_economics.py` to that directory (retain your existing API/backend files).
+3. In your Windows terminal:
 
 ```powershell
 cd D:\Users\atmm1\Decision_OS_Enterprise
-docker compose up -d db
-docker compose build api ui
-docker compose run --rm --no-deps api python -m backend.migration_r8 --check
-docker compose run --rm --no-deps api python -m backend.migration_r8 --apply
-docker compose up -d --no-build api ui
+python -m pytest tests/test_r9_control_plane.py -q
+# Tests require pytest installed in whichever Python environment runs them.
+docker compose up -d --build ui
 ```
 
-At `http://127.0.0.1:8502` use **Decision Infrastructure → Outcome Economics**.
+4. Navigate to **Decision Infrastructure → Outcome Economics** at http://127.0.0.1:8502.
 
-## API workflow
+If the Graphviz Python and native `dot` packages are missing, install them in the UI image (other Decision OS modules also use Graphviz). The new visual graph falls back to textual step navigation when Graphviz import fails; rendering availability depends on the deployed Streamlit runtime.
 
-1. `POST /v1/outcome-economics/plan` — one immutable expected benefit baseline for an existing tenant-scoped decision, period, currency, methodology, source reference. This R8 baseline **is not yet bound atomically to original approval time**.
-2. `POST /v1/outcome-economics/{id}/report` — authorized author appends self-reported outcome with provenance and attribution **label**; never finance-verified.
-3. `POST /v1/outcome-economics/{id}/finance-attest` — only a separate authenticated `finance` role can append an independently reconciled benefit, with GL/ERP reference and explicit acknowledgment. Same user cannot report and attest. Verification is an **attestation**, not proof the claimed GL pointer was independently retrieved.
-4. `GET /v1/outcome-economics/{id}` — deterministic replay, locally verified hash chain, and expected/reported/attested numbers. `variance` remains **null** until step 3.
+## Why this is not yet R9 governance-complete
 
-## Precision, governance and limitations
+This release improves discoverability and adoption. It does **not** implement the missing R7.1 atomic approval-time snapshot, predeclared kill criterion enforcement, independently trusted digital signatures or direct authenticated ERP/GL retrieval. The assurance panel says **Not verified** for controls not exposed by the R8 API. Existing R8 finance attestations record a finance user and source reference, not independent source-system retrieval.
 
-- Money is parsed from finite **decimal strings** into integer cents; comparisons share the same currency and fiscal period. The expected amount uses a one-period plan. No silent FX conversion, annualization, financial double counting or ROI formulas are inferred.
-- No self-reported savings can be labeled finance-verified, and admin isn't finance. Current auth uses configured bearer credentials, **not SSO/MFA**. Production must integrate SSO, scoped delegated identity, least privilege and controller authorization independent from general admins.
-- Records and reviewers are *append-only through the R8 API*. The PostgreSQL trigger denies normal UPDATE/DELETE. The digest has **no external signature/anchor**, and a privileged DB operator can alter or suppress a whole record stream. WORM retention, cryptographic signatures, independent anchoring and backup/recovery must be added before attesting enterprise-grade immutability.
-- Financial attestation records the controller's opinion and financial source pointer. It **doesn't validate a GL record through an ERP connector**; full provenance requires signed source retrieval, matching account/period/currency, duplicate-benefit controls, and independent controller documentation.
-- **Attribution** is independent: `experimental`, `quasi_experimental`, `correlational`, `estimated`, `unknown`. A method label is not a validated causal design. Even a reconciled amount does not prove that AI caused the benefit.
-- Root cause is captured as *notes/hypothesis*, not inferred truth.
-- This slice permits one period per decision and one finance confirmation per period. Corrections, reversals, multi-period benefits, approval-time anchoring and revocation require a designed governed versioned workflow—not direct edits. Do not use against live financial ledgers without these protections.
-- End-to-end PostgreSQL, security testing, browser testing and external signatures **have not been run**.
+### Recommended R9 backend gates
 
-## Automated checks
+1. Atomic approval-time snapshot in one PostgreSQL transaction covering decision version, evidence digests, assumption versions, expected financial baseline, policy versions and preapproved kill criteria. Capture only during the actual authoritative approval operation.
+2. Server-enforced kill criterion evaluation against consecutive verified observation periods; create policy-controlled review events, *not* automatic financial termination.
+3. As-of replay plus database tests for mutation attempts, role separation, concurrent approvals, tenant isolation, missing observations and tampered source records.
+4. Finance evidence reconciliation adapter with delegated identity and record hashes; avoid claiming verified savings from a free-text GL reference.
+5. Controlled agent execution only after server-side authorization with fresh policy checks.
 
-In the isolated test environment (`SQLite` memory; no PostgreSQL triggers):
+## Tests
 
-```bash
-python -m pytest tests/test_outcome_economics.py -q
-```
-
-8 focused tests passed covering monetary precision, no premature verified benefit, variance, independence of controllers, tenant isolation, idempotency, stale sequence rejection, tampering and data constraints.
-
-## Suggested next release
-
-R7.1 approval-time **atomic** integrity snapshot; R7.2 external signing; R8.1 finance connector + trial-balance/GL reconciliation with audit-safe reversals and multi-period accounting; R9 policy-enforced governed agent actions.
+18 local unit tests passed (the prior R8 UI test suite plus eight new tests). No live Windows Docker / PostgreSQL / browser test has been run here. The graph and CSS should be visually checked in both Streamlit dark and light settings and at narrow viewport widths.

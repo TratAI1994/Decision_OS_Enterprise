@@ -4,13 +4,11 @@ Presentation and deterministic help only. Authoritative finance and tenant
 controls remain in FastAPI; no client-side elevation or simulated approvals.
 """
 from __future__ import annotations
-
 import json
 import re
 import secrets
 from decimal import Decimal, InvalidOperation
 from typing import Any
-
 import streamlit as st
 
 STAGES = ("Overview", "1 · Plan", "2 · Measure", "3 · Finance review", "4 · Audit trail")
@@ -90,7 +88,7 @@ def validate_amount(value: str) -> str | None:
         return "Enter a decimal monetary amount (e.g. 12000000.00), with at most two decimal places."
     try:
         d = Decimal(s)
-        if not d.is_finite() or abs(d) > Decimal(9999999999999):
+        if not d.is_finite() or abs(d) > Decimal("9999999999999"):
             return "Amount must be finite and within the supported monetary range."
     except InvalidOperation:
         return "Amount is not a valid decimal."
@@ -98,16 +96,92 @@ def validate_amount(value: str) -> str | None:
 
 
 def _styles():
-    st.markdown('''<style>
-    .r8-hero {padding:1.35rem 1.5rem;background:linear-gradient(110deg,#182331,#27384c);color:#fff;border-radius:13px;margin:0 0 1rem;}
-    .r8-hero h2 {color:#fff!important;margin:0;font-size:1.55rem;font-weight:650;}
-    .r8-hero p {color:#d6e1ed!important;font-size:.93rem;margin:.4rem 0 0;}
-    .r8-step {border:1px solid rgba(130,146,163,.24);border-radius:9px;padding:.7rem 1rem;min-height:72px;}
-    .r8-step strong {display:block;font-size:.87rem;}
-    .r8-step small {font-size:.74rem;opacity:.75;}
-    .r8-subtle {font-size:.86rem;opacity:.85;}
-    @media(max-width:780px){.r8-hero{padding:1rem;} .r8-hero h2{font-size:1.25rem;}}
-    </style>''', unsafe_allow_html=True)
+    """Scoped AWS CodeCatalyst-inspired console styling; avoids altering other pages."""
+    st.markdown("""<style>
+    .r9-hero{background:radial-gradient(ellipse at 20% 0%,#132641 0%,#080f22 62%);border:1px solid #293b5a;
+      border-radius:18px;padding:1.5rem 1.8rem;color:#f2f7ff;margin:0 0 1.1rem;position:relative;overflow:hidden}
+    .r9-eyebrow{font-size:.69rem;letter-spacing:.12em;color:#61b9ff;text-transform:uppercase;font-weight:800}
+    .r9-hero h2{color:#f8fbff!important;font-weight:700;font-size:1.75rem;margin:.4rem 0}
+    .r9-hero p{color:#b4c7e0!important;font-size:.93rem;margin:0;line-height:1.55}
+    .r9-hero:after{content:'';position:absolute;right:0;bottom:0;height:2px;width:100%;
+       background:linear-gradient(90deg,#8155ca,#369afa,#b65ec5)}
+    .r9-node{border:1px solid #364a73;background:#080f20;border-radius:11px;color:#e5f0ff;padding:13px 15px;
+      min-height:76px;position:relative;box-shadow:0 6px 24px rgba(0,0,0,.11)}
+    .r9-node.active{border:2px solid #62a9ff;box-shadow:0 0 24px rgba(44,123,246,.2)}
+    .r9-node.done{border-color:#3eae90}.r9-node.blocked{border-color:#917b49}
+    .r9-node .idx{font-size:.63rem;letter-spacing:.13em;text-transform:uppercase;color:#8fb7e6;font-weight:700}
+    .r9-node strong{display:block;font-size:.94rem;margin-top:5px;color:#e9f3ff}
+    .r9-node small{color:#a5b7d2;font-size:.75rem}
+    .r9-rail{height:24px;width:2px;margin:auto;background:linear-gradient(#b251d0,#397cea)}
+    .r9-note{background:#101d31;border:1px solid #324660;color:#bdcde4;border-radius:11px;padding:12px 15px;
+      font-size:.82rem;line-height:1.6}
+    .r9-note strong{color:#e2f0ff}
+    .r9-glow{height:1px;background:linear-gradient(90deg,transparent,#508eed,#ac51c4,transparent)}
+    .r9-label{color:#648bad;font-size:.73rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    /* Only the R9 workflow buttons receive console styling through the key-derived wrapper. */
+    div[class*='st-key-r9_nav_'] button{border:1px solid #364c76!important;background:#0d1b35!important;
+      color:#e5efff!important;border-radius:8px!important;font-size:.82rem!important;font-weight:600!important}
+    div[class*='st-key-r9_nav_'] button:hover{border-color:#6aafff!important;background:#182c50!important}
+    @media(max-width:900px){.r9-hero{padding:1rem}.r9-hero h2{font-size:1.35rem}
+    .r9-node{min-height:65px}}
+    </style>""",unsafe_allow_html=True)
+
+
+def workflow_readiness(plan, claims, verifications, integrity, approval_snapshot=None, kill_criteria=None):
+    """Truthful readiness indicators; missing data means NOT VERIFIED, not a passing control."""
+    return {
+        "Expected baseline": "Recorded" if plan else "Missing",
+        "Measured benefit": "Submitted" if claims else "Missing",
+        "Finance review": "Attested" if verifications else "Pending",
+        "Event integrity": "Locally consistent" if integrity.get('consistent') is True else "Not verified",
+        "Approval-time snapshot": "Referenced (verify externally)" if approval_snapshot else "Not verified",
+        "Preapproved kill criteria": "Referenced (verify externally)" if kill_criteria else "Not verified",
+        "ERP/GL source authentication": "Not independently verified",
+    }
+
+
+def _workflow_card(step: int, label: str, description: str, status: str, active: bool):
+    import html
+    css = 'active' if active else ('done' if status in ('Recorded','Submitted','Attested') else 'blocked')
+    st.markdown(f'<div class="r9-node {css}"><div class="idx">STEP {step:02d} · {html.escape(status)}</div>'
+                f'<strong>{html.escape(label)}</strong><small>{html.escape(description)}</small></div>',unsafe_allow_html=True)
+
+
+def _pipeline_graph(stage: str, count: int):
+    """Actual DOT graph, visually inspired by pipeline orchestration consoles."""
+    from graphviz import Digraph
+    dot=Digraph('finance_pipeline',graph_attr={'rankdir':'LR','bgcolor':'#081020','pad':'0.28',
+        'nodesep':'0.36','ranksep':'0.5','splines':'ortho'},format='svg')
+    dot.attr('node',shape='box',style='rounded,filled',fontname='Arial',fontsize='12',
+             fontcolor='#e8f2ff',margin='0.23,0.19',color='#49658d',fillcolor='#111f38',penwidth='1.4')
+    entries=[('plan','Expected value','1 · Plan',1),('measure','Observed outcome','2 · Measure',2),
+             ('finance','Finance validation','3 · Finance review',3),('audit','Event replay','4 · Audit trail',4)]
+    for uid,label,stage_name,idx in entries:
+        selected=stage==stage_name
+        fill='#17385c' if selected else '#111f38'
+        edge='#75b5ff' if selected else ('#36b899' if count>=idx and idx<4 else '#52607c')
+        status='ACTIVE' if selected else ('RECORDED' if count>=idx and idx<4 else 'PENDING')
+        if idx==4:status='AVAILABLE'
+        dot.node(uid,f'{label}\n{status}',fillcolor=fill,color=edge,penwidth='2.3' if selected else '1.5')
+    dot.attr('edge',color='#825bd5',penwidth='1.9',arrowsize='0.8')
+    dot.edges([('plan','measure'),('measure','finance'),('finance','audit')])
+    return dot
+
+
+def _workflow_navigation(stage, count):
+    """Real navigation controls (not inert HTML) alongside the visual pipeline."""
+    st.markdown('<div class="r9-label">Financial evidence pipeline</div>',unsafe_allow_html=True)
+    steps=[('1 · Plan','Expected savings','Record business-case baseline', 'Recorded' if count>=1 else 'Required'),
+           ('2 · Measure','Measured outcome','Attach observed benefit evidence','Submitted' if count>=2 else 'Pending'),
+           ('3 · Finance review','Finance validation','Independent controller attestation','Attested' if count>=3 else 'Pending'),
+           ('4 · Audit trail','Evidence & replay','Event sequence and local chain','Available')]
+    for i,(key,title,desc,status) in enumerate(steps):
+        _workflow_card(i+1,title,desc,status,stage==key)
+        if st.button('Open ' + title,key=f'r9_nav_{i}',use_container_width=True):
+            st.session_state['r8_stage']=key
+            st.rerun()
+        if i<len(steps)-1:
+            st.markdown('<div class="r9-rail"></div>',unsafe_allow_html=True)
 
 
 def _help_panel(stage: str, summary: dict):
@@ -139,10 +213,14 @@ def _metric(label, value, detail):
 
 def render(api, navigate=None):
     _styles()
-    st.markdown('<div class="r8-hero"><h2>Outcome Economics · Value Realization</h2><p>From business case to Finance Controller attestation. Every amount has a status, source and accountable role.</p></div>', unsafe_allow_html=True)
-    st.caption("DECISION INFRASTRUCTURE / OUTCOME ECONOMICS / R8 FINANCE WORKFLOW")
-    with st.expander("Before you begin · 60-second orientation", expanded=False):
-        st.markdown("**Project sponsor:** records expected value and benefit evidence. **Finance Controller:** independently reconciles the benefit. **Executive:** reads verified-versus-expected variance after attestation. **Auditor:** inspects event lineage. No team-reported claim is automatically finance-verified.")
+    st.markdown('<div class="r9-hero"><div class="r9-eyebrow">DECISION OS / DECISION INFRASTRUCTURE / R8</div>'
+                '<h2>Value Realization Control Plane</h2>'
+                '<p>Trace every investment from expected value to observed results, independent Finance review, '
+                'and the event trail. Select a stage to see exactly what to do next.</p></div>',unsafe_allow_html=True)
+    with st.expander("Start here · How this works",expanded=False):
+        st.markdown("**Business sponsor** records the expectation. **Program owner** reports evidence. "
+                    "**Finance Controller** independently attests. **Auditor** inspects the event stream. "
+                    "An attestation is not independently retrieved ERP evidence, and variance does not prove causality.")
     ds = api('GET', '/v1/intelligence/decisions', quiet=True)
     if isinstance(ds, dict): ds = ds.get('items', ds.get('decisions', []))
     if not isinstance(ds, list):
@@ -168,18 +246,25 @@ def render(api, navigate=None):
         st.error("Event-chain integrity check failed or could not be verified. Financial write actions are blocked. Investigate the backend event stream.")
         return
     count, stage_status = progress(plan, claims, verifications)
-    with st.container(border=True):
-        a,b = st.columns([1,3])
-        a.metric("Stages completed", f"{count}/3")
-        b.markdown("**Current status**")
-        b.write(stage_status)
-        st.progress(count/3)
-        stages = ["Set expectation", "Report outcome", "Finance attests"]
-        cols = st.columns(3)
-        for idx,(col,label) in enumerate(zip(cols,stages)):
-            col.markdown(f"{'✓' if count>idx else '○'} **{label}**")
-    stage = st.radio("Workspace step", STAGES, horizontal=True, key="r8_stage", label_visibility="collapsed")
-    main, side = st.columns([2.05, 1], gap="large")
+    # Resolve page state BEFORE rendering any dependent graph or controls.
+    # This must work for fresh sessions and stale/invalid persisted selections.
+    stage = st.session_state.get('r8_stage', 'Overview')
+    if stage not in STAGES:
+        stage = 'Overview'
+        st.session_state['r8_stage'] = stage
+    st.markdown(f"**Current control state:** {stage_status} · **{count}/3** financial lifecycle steps")
+    st.progress(count / 3)
+    st.caption('DECISION-TO-FINANCE PIPELINE · Select a step in the left rail to open it')
+    try:
+        st.graphviz_chart(_pipeline_graph(stage, count), use_container_width=True)
+    except (ImportError, RuntimeError, ValueError):
+        st.caption('Pipeline graph unavailable in this installation; use the accessible step navigation below.')
+    left,main,side=st.columns([1.08,2.15,1.25],gap='medium')
+    with left:
+        _workflow_navigation(stage,count)
+        st.markdown('<div class="r9-glow"></div>',unsafe_allow_html=True)
+        if st.button('Executive overview',key='r9_nav_overview',use_container_width=True):
+            st.session_state['r8_stage']='Overview';st.rerun()
     with main:
         if stage == "Overview":
             st.subheader("Financial value at a glance")
@@ -265,9 +350,18 @@ def render(api, navigate=None):
             st.code((integrity.get('head_hash') or 'Not available'),language=None)
             st.caption('The event chain is not externally signed or anchored. Privileged database changes remain a risk.')
     with side:
-        _help_panel(stage,summary)
         with st.container(border=True):
-            st.markdown('#### Who does what?')
-            st.caption('Sponsor: business case and observed value. Controller: independent reconciliation. Auditor: source references and history. The API, not this page, enforces identity and separation of duties.')
-            st.markdown('#### Data confidence')
-            st.caption('Self-reported ≠ finance-attested ≠ independently ERP-verified. None of these by themselves proves causality.')
+            st.markdown('#### Your next action')
+            st.write(stage_status)
+            st.caption('This guidance is derived from recorded workflow events, not fabricated telemetry.')
+        _help_panel(stage,summary)
+        with st.expander('Evidence and governance readiness',expanded=True):
+            readiness=workflow_readiness(plan,claims,verifications,integrity)
+            for label,status in readiness.items():
+                st.markdown(f'**{label}**')
+                st.caption(status)
+            st.warning('Approval-time snapshots, enforced kill criteria, and independent ERP/GL authentication are NOT established by this R8 page.')
+        with st.container(border=True):
+            st.markdown('#### Accountability')
+            st.caption('Sponsor: expected value. Program owner: observed outcome. Controller: independent reconciliation. Auditor: event history. Backend enforces identity and separation of duties.')
+            st.caption('Self-reported ≠ finance-attested ≠ ERP-verified. None proves AI causation.')
