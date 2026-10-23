@@ -1,0 +1,33 @@
+# STARTER ONLY: configure registry, secrets, ingress/TLS, network policy,
+# persistent storage, probes, and customer-managed PostgreSQL before deploying.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decision-os-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: decision-os-api}
+  template:
+    metadata:
+      labels: {app: decision-os-api}
+    spec:
+      containers:
+        - name: api
+          image: registry.example/decision-os:0.1
+          command: ["uvicorn", "backend.api:app", "--host", "0.0.0.0", "--port", "8000"]
+          envFrom:
+            - secretRef: {name: decision-os-secrets}
+          ports: [{containerPort: 8000}]
+          readinessProbe:
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: decision-os-api
+spec:
+  selector: {app: decision-os-api}
+  ports: [{port: 8000, targetPort: 8000}]
