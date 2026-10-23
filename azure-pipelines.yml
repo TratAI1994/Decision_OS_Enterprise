@@ -1,8 +1,3 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
@@ -10,10 +5,28 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.10' # Adjust if your Decision OS uses a different version
+  displayName: 'Set up Python environment'
 
+# 1. Install Code Quality Tools
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    python -m pip install --upgrade pip
+    pip install ruff
+  displayName: 'Install Ruff (Code Quality)'
+
+# 2. Run Ruff Linter
+- script: |
+    ruff check .
+  displayName: 'AIOps/Quality: Run Ruff Linter'
+
+# 3. Install and Run Trivy
+- script: |
+    # Download and install the Trivy binary silently
+    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+    
+    # Run a filesystem scan on your repository
+    # The --exit-code 1 flag forces the pipeline to fail if HIGH or CRITICAL issues are found
+    trivy fs . --severity HIGH,CRITICAL --exit-code 1
+  displayName: 'DevSecOps: Run Trivy Vulnerability Scanner'
