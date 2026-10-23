@@ -1,8 +1,8 @@
 """Decision OS domain: framework-independent contracts, gates and exact decision service."""
 from __future__ import annotations
-from dataclasses import dataclass
-from hashlib import sha256
+
 import json
+from hashlib import sha256
 from typing import Any
 
 STAGES = {
@@ -56,7 +56,7 @@ def states(artifacts: list[dict], approvals: list[dict] | None = None) -> dict:
 def optimize(spec: dict) -> dict:
     """True three-pass binary HiGHS solve with objective-preservation checks."""
     import numpy as np
-    from scipy.optimize import milp, Bounds, LinearConstraint
+    from scipy.optimize import Bounds, LinearConstraint, milp
     items = spec['items']; n = len(items)
     if not 1 <= n <= 500: raise ValueError('Use 1 to 500 items')
     ids = [x['id'] for x in items]

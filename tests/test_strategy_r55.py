@@ -1,11 +1,14 @@
-import os,json
-from datetime import datetime,timedelta,timezone
-from sqlalchemy import inspect,select
+import json
+import os
+from datetime import UTC, datetime, timedelta
+
 from fastapi.testclient import TestClient
-from backend.api import app,configure
-from backend.strategy_outcomes import status, KeyResult,Observation
-from backend.migration_r55 import run
+from sqlalchemy import inspect
+
+from backend.api import app, configure
 from backend.db import engine_for
+from backend.migration_r55 import run
+
 
 def test_additive_migration_repeatable():
     configure('sqlite:///:memory:')
@@ -35,10 +38,10 @@ def test_end_to_end_strategy_tenant_stale_attribution_discovery():
     assert q('GET',f'/v1/strategy/lineage/{d}',who='other').status_code==404
     assert len(q('GET',f'/v1/strategy/lineage/{d}').json()['chains'])==1
     assert q('POST','/v1/strategy/decision-links',who='other',json={'key_result_id':k['id'],'decision_id':d}).status_code==404
-    old=(datetime.now(timezone.utc)-timedelta(days=10)).isoformat()
+    old=(datetime.now(UTC)-timedelta(days=10)).isoformat()
     post('observations',{'key_result_id':k['id'],'value':15,'observed_at':old,'source':'manual','source_ref':'survey-2026','confidence':'low','attribution':'correlated','limitations':'Changes to staffing'})
     assert q('GET','/v1/strategy/key-results').json()[0]['measurement']['state']=='STALE'
-    current=datetime.now(timezone.utc).isoformat()
+    current=datetime.now(UTC).isoformat()
     post('observations',{'key_result_id':k['id'],'value':8,'observed_at':current,'source':'manual','source_ref':'survey-new','confidence':'moderate','attribution':'correlated','limitations':'Seasonal confounding'})
     measurement=q('GET','/v1/strategy/key-results').json()[0]['measurement']
     assert measurement['state']=='IN_PROGRESS' and measurement['gap']==-7

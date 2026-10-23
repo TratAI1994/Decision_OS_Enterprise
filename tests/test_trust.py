@@ -1,6 +1,10 @@
-import os,json
+import json
+import os
+
 from fastapi.testclient import TestClient
-from backend.api import app,configure
+
+from backend.api import app, configure
+
 
 def test_r5_trust_lineage_isolation_and_reviews():
  os.environ['DECISION_OS_IDENTITIES']=json.dumps({'a':{'user':'lead-a','tenant':'A','role':'lead'},'b':{'user':'lead-b','tenant':'B','role':'lead'},'r':{'user':'reviewer-a','tenant':'A','role':'reviewer'}})

@@ -3,17 +3,30 @@ Observations and experiment results are append-only application records.
 No inference of causal attribution, confidence, or financial reconciliation.
 """
 from __future__ import annotations
+
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, String, Integer, DateTime, Float, ForeignKey, select, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    select,
+)
 from sqlalchemy.orm import Session
-from .db import Base, Initiative
-from .intelligence import DecisionRecord
-from .execution import ExecutionTask
 
-def now():return datetime.now(timezone.utc)
+from .db import Base
+from .execution import ExecutionTask
+from .intelligence import DecisionRecord
+
+
+def now():return datetime.now(UTC)
 def new_id():return secrets.token_hex(16)
 
 class FocusArea(Base):
@@ -130,7 +143,7 @@ def body(r):
 def status(kr,obs,at=None):
     if not obs:return {'state':'NO_DATA','observation':None,'reason':'No recorded observation'}
     at=at or now()
-    date=obs.observed_at.replace(tzinfo=timezone.utc) if obs.observed_at.tzinfo is None else obs.observed_at
+    date=obs.observed_at.replace(tzinfo=UTC) if obs.observed_at.tzinfo is None else obs.observed_at
     age=(at-date).total_seconds()/86400
     if age>kr.stale_after_days:return {'state':'STALE','age_days':round(age,1),'observation':body(obs),'reason':'Observation exceeds freshness threshold'}
     meets=obs.value>=kr.target if kr.direction=='higher' else obs.value<=kr.target

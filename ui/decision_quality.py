@@ -4,10 +4,13 @@ All data comes from existing tenant-authorized FastAPI endpoints. Local scenario
 inputs are expressly hypothetical and never saved as business evidence.
 """
 from __future__ import annotations
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Callable
+
 import math
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
+
 import streamlit as st
 
 WEIGHTS = {'Evidence': .20, 'Economics': .15, 'Risk': .15,
@@ -57,7 +60,7 @@ def assessment_state(expected: float | None, actual: float | None, *,
     A reviewed status is reported separately from metric divergence, and
     freshness trumps any apparent target attainment.
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     outcome = {'state': 'NOT MEASURED', 'variance_pp': None, 'deviation_pct': None,
                'reviewed_status': reviewed_status, 'basis': 'No verified evaluation of the assumption'}
     if expected is None or actual is None or not evidence_ref or not observed_at:
@@ -65,7 +68,7 @@ def assessment_state(expected: float | None, actual: float | None, *,
     try:
         dt = datetime.fromisoformat(observed_at.replace('Z', '+00:00'))
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         age_days = (now - dt).total_seconds() / 86400
         if stale_after_days is None or stale_after_days <= 0 or age_days > stale_after_days:
             outcome.update(state='STALE', basis='Measurement stale or freshness policy undefined')
@@ -166,7 +169,7 @@ def render(api: Callable, navigate: Callable | None = None) -> None:
             st.caption('Explore a scenario without creating fake telemetry or changing assumption status.')
             expected=st.number_input('Hypothetical expected improvement (%)',value=20.0,key='dq_hyp_expected')
             actual=st.number_input('Hypothetical observed improvement (%)',value=15.0,key='dq_hyp_actual')
-            scenario=assessment_state(expected,actual,observed_at=datetime.now(timezone.utc).isoformat(),stale_after_days=7,evidence_ref='SCENARIO-ONLY')
+            scenario=assessment_state(expected,actual,observed_at=datetime.now(UTC).isoformat(),stale_after_days=7,evidence_ref='SCENARIO-ONLY')
             st.metric('Scenario difference',f"{scenario['variance_pp']:+.1f} percentage points")
             st.info('Interpretation: ' + scenario['basis'])
     with t_queue:

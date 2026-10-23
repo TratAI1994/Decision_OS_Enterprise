@@ -1,7 +1,11 @@
 """Integration tests for R1.1–R3 across roles, tenants and analytical boundaries."""
-import os,json
+import json
+import os
+
 from fastapi.testclient import TestClient
-from backend.api import app,configure
+
+from backend.api import app, configure
+
 
 def test_complete_decision_intelligence_flow():
     os.environ['DECISION_OS_IDENTITIES']=json.dumps({

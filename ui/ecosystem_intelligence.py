@@ -5,11 +5,11 @@ No approval, API POST, identity alteration, or financial-reconciliation claims.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from html import escape
-from typing import Callable, Any
 import json
+from collections.abc import Callable
+from dataclasses import dataclass
+from html import escape
+
 import streamlit as st
 
 
@@ -255,7 +255,7 @@ def _connections():
 
 
 def _advisor(api):
-    from ui.decision_operations import evidence_advisor, debt_signals, load_evidence
+    from ui.decision_operations import debt_signals, evidence_advisor, load_evidence
     st.subheader('Deterministic Ecosystem Evidence Advisor')
     st.caption('Answers only from accessible API record fields and references. Unsupported questions are refused. No LLM, no vendor data simulation.')
     if api is None:

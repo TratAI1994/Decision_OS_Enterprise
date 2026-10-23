@@ -5,12 +5,11 @@ Only authorized data from the caller-provided tenant-scoped FastAPI adapter.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
-from typing import Callable
 import json
-import re
+from collections.abc import Callable
+from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
+
 import streamlit as st
 
 

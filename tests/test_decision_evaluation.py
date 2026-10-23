@@ -1,4 +1,10 @@
-from backend.decision_evaluation import WEIGHTS, score_answers, outcome_language, content_hash, RUBRIC_VERSION
+from backend.decision_evaluation import (
+    WEIGHTS,
+    content_hash,
+    outcome_language,
+    score_answers,
+)
+
 
 def complete():
     return {k:{'state':'verified','evidence_ref':'EVIDENCE-123','explanation':'Source has been reviewed'} for k in WEIGHTS}
@@ -31,9 +37,12 @@ def test_canonical_hash_stable():
     assert content_hash({'a':1,'b':2})==content_hash({'b':2,'a':1})
 
 def test_api_draft_tenant_identity_and_lock_gates():
-    import os,json
+    import json
+    import os
+
     from fastapi.testclient import TestClient
-    from backend.api import app,configure
+
+    from backend.api import app, configure
     os.environ['DECISION_OS_IDENTITIES']=json.dumps({
         'lead':{'user':'lead','tenant':'A','role':'lead'},
         'reviewer':{'user':'reviewer','tenant':'A','role':'reviewer'},

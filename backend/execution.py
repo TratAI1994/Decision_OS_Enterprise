@@ -2,12 +2,25 @@
 All business-impact numbers are hypothetical, never finance-reconciled.
 """
 from __future__ import annotations
-import secrets, math
-from datetime import datetime, timezone, date
+
+import secrets
+from datetime import UTC, date, datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, select, update, CheckConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    select,
+    update,
+)
 from sqlalchemy.orm import Session
+
 from .db import Base, Initiative
 from .intelligence import DecisionRecord, OfficeRecord
 
@@ -33,7 +46,7 @@ class ExecutionTask(Base):
     daily_value_at_risk=Column(Float,nullable=False,default=0)
     cost_model_source=Column(String(600),nullable=False)
     version=Column(Integer,nullable=False,default=1)
-    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(timezone.utc))
+    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(UTC))
     __table_args__=(CheckConstraint('daily_value_at_risk >= 0',name='ck_etes_nonnegative_value'),)
 
 class ExecutionProposal(Base):
@@ -46,7 +59,7 @@ class ExecutionProposal(Base):
     status=Column(String(32),nullable=False,default='proposed')
     proposed_by=Column(String(120),nullable=False)
     reviewed_by=Column(String(120),nullable=True)
-    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(timezone.utc))
+    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(UTC))
 
 class NewTask(BaseModel):
     initiative_id:str
@@ -188,7 +201,7 @@ def build_router(identity,session,require,events,find_initiative):
         blocked.sort(key=lambda t:cost_details(t)['modeled_deferred_value'],reverse=True)
         findings=[{'task_id':t.id,'title':t.title,'status':t.status,'technical_stage':t.technical_stage,
                    'impact':cost_details(t),'recommendation':f'Review blocker with {t.assignee_ref}; verify dependencies and unblock or rescope.'} for t in blocked]
-        return {'generated_at':datetime.now(timezone.utc).isoformat(),'source':'stored execution records; deterministic; not an autonomous monitor',
+        return {'generated_at':datetime.now(UTC).isoformat(),'source':'stored execution records; deterministic; not an autonomous monitor',
                 'total_tasks':len(rows),'blocked_count':len(blocked),'total_modeled_deferred_value':round(sum(x['impact']['modeled_deferred_value'] for x in findings),2),
                 'findings':findings,'warning':'Modeled deferred value, not an audited loss. Overlap between tasks can double count; do not sum as realized loss.'}
     @router.post('/proposals',status_code=201)

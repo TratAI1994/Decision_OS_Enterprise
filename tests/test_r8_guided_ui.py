@@ -1,5 +1,9 @@
 """No application server required: bounded copilot and workflow invariants."""
-import importlib.util, pathlib, sys, types
+import importlib.util
+import pathlib
+import sys
+import types
+
 root=pathlib.Path(__file__).resolve().parents[1]
 sys.modules.setdefault('streamlit',types.ModuleType('streamlit'))
 spec=importlib.util.spec_from_file_location('r8_guided',root/'ui'/'outcome_economics.py')

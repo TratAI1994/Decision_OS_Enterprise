@@ -1,6 +1,10 @@
-import json,os
+import json
+import os
+
 from fastapi.testclient import TestClient
-from backend.api import app,configure
+
+from backend.api import app, configure
+
 
 def test_funding_decisions_scoped_by_initiative_and_tenant():
     os.environ['DECISION_OS_IDENTITIES']=json.dumps({'a':{'user':'lead-a','tenant':'A','role':'lead'},'b':{'user':'lead-b','tenant':'B','role':'lead'}})

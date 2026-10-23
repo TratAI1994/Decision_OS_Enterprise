@@ -6,7 +6,11 @@ Reads bootstrap lead/finance credentials from local .env, never prints them.
 Requires existing running API and DECISION_OS_IDENTITIES in .env.
 """
 from __future__ import annotations
-import argparse, json, os, urllib.request, urllib.error
+
+import argparse
+import json
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 PREFIX='[DEMO • SYNTHETIC] '

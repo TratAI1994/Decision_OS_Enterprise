@@ -11,10 +11,20 @@ Run UI:       python -m streamlit run app.py
 Self-test:    python app.py --self-test  (runs all 18 deterministic & SQLite suites without Streamlit)
 """
 from __future__ import annotations
-import sys, os, json, math, hashlib, hmac, secrets, itertools, time, re, copy, sqlite3
+
+import copy
+import hashlib
+import hmac
+import itertools
+import json
+import math
+import re
+import secrets
+import sqlite3
+import time
+from collections import Counter, deque
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from collections import deque, Counter
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -266,7 +276,7 @@ def solve_scipy_milp(spec: dict) -> dict[str, Any]:
     """Three-pass lexicographic binary MILP: maximize impact, then secondary, then minimize cost."""
     import numpy as np
     try:
-        from scipy.optimize import milp, Bounds, LinearConstraint
+        from scipy.optimize import Bounds, LinearConstraint, milp
     except ImportError:
         return {'status': 'SOLVER UNAVAILABLE', 'selected': [], 'metrics': None, 'verified': False, 'message': 'Install scipy'}
     items = spec['items']; n = len(items); idx = {r['id']: j for j, r in enumerate(items)}
@@ -522,7 +532,7 @@ def stage_states(run=None, risk=None, approval=None, stale=False) -> dict[str, s
 
 def audit_certificate(spec: dict, run: dict, key: bytes) -> dict[str, Any]:
     doc = {
-        'version': VERSION, 'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+        'version': VERSION, 'timestamp_utc': datetime.now(UTC).isoformat(),
         'model_hash': digest(spec), 'decision_hash': digest(run),
         'status': run['status'], 'verified': run.get('verified', False),
         'scope': 'single-session local demo; HMAC-SHA256 tamper evidence'
@@ -550,7 +560,7 @@ def record_approval(run: dict, reviewer: str, acknowledged: bool, certificate: d
             or certificate.get('verified') is not True):
         raise ValueError('Certificate does not match this decision snapshot')
     return {
-        'reviewer': str(reviewer).strip(), 'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+        'reviewer': str(reviewer).strip(), 'timestamp_utc': datetime.now(UTC).isoformat(),
         'spec_hash': digest(run['spec']), 'decision_hash': digest(run['result']),
         'certificate_signature': certificate['hmac_sha256']
     }
@@ -895,7 +905,7 @@ def init_process_storage(conn):
         for version, ddl in migrations.items():
             if version not in current:
                 conn.execute(ddl)
-                conn.execute('INSERT INTO os_schema_migrations VALUES (?,?)', (version,datetime.now(timezone.utc).isoformat()))
+                conn.execute('INSERT INTO os_schema_migrations VALUES (?,?)', (version,datetime.now(UTC).isoformat()))
 
 def load_process_project(conn, process_id):
     init_process_storage(conn)
@@ -907,7 +917,7 @@ def load_process_project(conn, process_id):
 def save_process_project(conn, process_id, project, actor, event_type, expected_revision):
     """Compare-and-swap revision, state/history committed atomically, chained history hashes."""
     init_process_storage(conn)
-    now=datetime.now(timezone.utc).isoformat()
+    now=datetime.now(UTC).isoformat()
     with conn:
         prev=conn.execute('SELECT revision FROM os_process_projects WHERE process_id=?',(process_id,)).fetchone()
         if prev is None:
@@ -967,7 +977,7 @@ def record_process_evidence(workflow, project, stage_id, key, value, owner, vali
     if state['blocked_by']:
         raise ValueError('Prerequisites incomplete: ' + ', '.join(state['blocked_by']))
     original = project['evidence'].get(stage_id, {}).get(key)
-    updated = {'value': value.strip(), 'valid': bool(validated), 'owner': owner.strip(), 'at': datetime.now(timezone.utc).isoformat(), 'source': 'manual-evidence', 'sha256': digest(value.strip()), 'stale': False}
+    updated = {'value': value.strip(), 'valid': bool(validated), 'owner': owner.strip(), 'at': datetime.now(UTC).isoformat(), 'source': 'manual-evidence', 'sha256': digest(value.strip()), 'stale': False}
     if original != updated:
         invalidate_process_downstream(workflow, project, stage_id)
     project['evidence'].setdefault(stage_id, {})[key] = updated
@@ -983,7 +993,7 @@ def approve_process_stage(workflow, project, stage_id, reviewer, ack):
         raise ValueError('Reviewer and explicit acknowledgement required')
     if process_states(workflow, project)[stage_id]['status'] != 'READY_FOR_APPROVAL':
         raise ValueError('Gate is not ready for approval')
-    approval = {'reviewer': reviewer.strip(), 'approved': True, 'at': datetime.now(timezone.utc).isoformat(), 'scope_hash': process_gate_hash(workflow, project, stage_id), 'scope': 'local demonstration; no authentication'}
+    approval = {'reviewer': reviewer.strip(), 'approved': True, 'at': datetime.now(UTC).isoformat(), 'scope_hash': process_gate_hash(workflow, project, stage_id), 'scope': 'local demonstration; no authentication'}
     project['approvals'][stage_id] = approval
     return approval
 
@@ -1009,7 +1019,7 @@ def execute_process_action(workflow, project, stage_id, context):
     if state['status'] not in ('READY', 'IN_PROGRESS'):
         raise ValueError('Stage execution blocked: ' + state['status'])
     result = PROCESS_ACTIONS[stage.action](context)
-    project['executions'].append({'stage': stage_id, 'action': stage.action, 'result': result, 'at': datetime.now(timezone.utc).isoformat()})
+    project['executions'].append({'stage': stage_id, 'action': stage.action, 'result': result, 'at': datetime.now(UTC).isoformat()})
     return result
 
 
@@ -1117,7 +1127,7 @@ INITIATIVE_NEXT = {
 
 def validate_initiative(payload):
     try:
-        from pydantic import BaseModel, Field, ConfigDict
+        from pydantic import BaseModel, ConfigDict, Field
         class Contract(BaseModel):
             model_config = ConfigDict(extra='ignore', str_strip_whitespace=True)
             name: str = Field(min_length=3, max_length=120)
@@ -1256,7 +1266,7 @@ def enterprise_connection(db_path=None):
 
 def log_audit_event(conn, actor: str, role: str, event_type: str, entity_id: str, summary: str, payload: Any):
     eid = secrets.token_hex(8)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     conn.execute(
         'INSERT INTO audit_events VALUES (?,?,?,?,?,?,?,?)',
         (eid, actor, role, event_type, entity_id, summary, digest(payload)[:24], now)
@@ -1266,7 +1276,7 @@ def log_audit_event(conn, actor: str, role: str, event_type: str, entity_id: str
 def save_initiative(conn, data: dict, initiative_id: str | None = None, expected_version: int | None = None, actor: str = 'System', role: str = 'Transformation Lead') -> str:
     """Transaction-safe save with optimistic concurrency check on version_id."""
     clean = validate_initiative(data)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     if initiative_id:
         row = conn.execute('SELECT version_id FROM initiatives WHERE id=?', (initiative_id,)).fetchone()
         if row:
@@ -1303,7 +1313,7 @@ def store_evidence(conn, initiative_id: str, stage: str, artifact: str, value: s
     record = {
         'value': str(value).strip(), 'owner': str(owner).strip(), 'role': role, 'validated': True,
         'attestation': 'Authenticated session attestation; SHA-256 hash-bound',
-        'timestamp_utc': datetime.now(timezone.utc).isoformat()
+        'timestamp_utc': datetime.now(UTC).isoformat()
     }
     record['hash'] = digest(record)
     conn.execute('INSERT OR REPLACE INTO evidence VALUES(?,?,?,?)', (initiative_id, stage, artifact, canonical(record)))
@@ -1321,7 +1331,7 @@ def record_benefit_telemetry(conn, initiative_id: str, period_month: str, baseli
     if any(x < 0 for x in (baseline_cost, planned_benefit, realized_benefit, actual_run_cost, active_users)) or not (0.0 <= confidence_score <= 1.0):
         raise ValueError('Telemetry values must be non-negative and confidence score in [0, 1].')
     tid = hashlib.sha256(f"{initiative_id}:{period_month}".encode()).hexdigest()[:16]
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     conn.execute(
         'INSERT OR REPLACE INTO benefit_telemetry VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
         (tid, initiative_id, period_month.strip(), float(baseline_cost), float(planned_benefit),
@@ -1401,7 +1411,7 @@ def run_golden_eval_suite(conn, initiative_id: str, model_tag: str = 'enterprise
     if latency_p95_ms > thresholds['latency_p95_max_ms']: failures.append('Simulated latency above threshold')
     passed = not failures
     run_id = secrets.token_hex(8)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     report = {'run_id': run_id, 'initiative_id': initiative_id,
               'model_tag': model_tag, 'dataset_name': dataset_name,
               'sample_count': samples, 'evaluation_type': 'SIMULATION',
@@ -1444,7 +1454,7 @@ def execute_stage_job(conn, initiative_id: str, stage: str, action_name: str, pa
 
     elapsed = round((time.perf_counter() - t0) * 1000 + 14.2, 2)
     job_id = secrets.token_hex(8)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     out_doc = {'job_id': job_id, 'status': status, 'attempt': attempt, 'detail': detail, 'payload': payload}
     out_hash = digest(out_doc)
     conn.execute(
@@ -1494,7 +1504,7 @@ def advisory_mission(initiative: dict, records: dict, approval: dict | None = No
             severity = 'INFO' if approved else 'ACTION'
         cards.append({'agent': name, 'responsibility': purpose, 'message': msg, 'priority': severity, 'source': 'Deterministic Python + SQLite state'})
     return {
-        'initiative_id': initiative.get('id'), 'generated_utc': datetime.now(timezone.utc).isoformat(),
+        'initiative_id': initiative.get('id'), 'generated_utc': datetime.now(UTC).isoformat(),
         'next_stage': next_stage, 'cards': cards, 'economics': economics, 'stage_states': stages,
         'limitations': 'Controlled agent workbench: agents stage actions into a human-in-the-loop queue and never self-approve release gates.',
         'evidence_fingerprint': digest({'initiative': initiative, 'evidence': records})
@@ -1505,7 +1515,7 @@ def stage_agent_proposals(conn, initiative: dict) -> list[dict[str, Any]]:
     iid = initiative['id']
     records = read_evidence(conn, iid)
     states = initiative_state(initiative, records)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     created = []
     # Find ready or in-progress stages and propose draft evidence or evaluation runs
     for stg in INITIATIVE_STAGES:
@@ -1562,7 +1572,7 @@ def authorize_agent_action(conn, action_id: str, reviewer: str, role: str, appro
     if status != 'PENDING_HUMAN_AUTH':
         raise ValueError(f'Action already processed ({status})')
     payload = json.loads(payload_json)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     if not approve:
         conn.execute('UPDATE agent_action_queue SET status=?, reviewed_by=?, reviewed_utc=? WHERE action_id=?', ('REJECTED', reviewer.strip(), now, action_id))
         conn.commit()

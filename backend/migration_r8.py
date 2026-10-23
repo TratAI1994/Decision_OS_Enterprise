@@ -1,8 +1,11 @@
 """Additive R8 append-only outcome event table."""
 import argparse
-from sqlalchemy import inspect,text
+
+from sqlalchemy import inspect, text
+
 from .db import engine_for
 from .outcome_economics import OutcomeEvent
+
 
 def run(engine,apply=False):
     tables=set(inspect(engine).get_table_names())

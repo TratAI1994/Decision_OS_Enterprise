@@ -4,11 +4,13 @@ These are educational readiness checklists, NOT cloud-provider certifications.
 No secrets, local databases, or external writes. No outcomes are inferred.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import escape
-import json
+
 import streamlit as st
+
 
 @dataclass(frozen=True)
 class Gate:
@@ -81,7 +83,7 @@ def summarize(gates, statuses):
 
 def build_brief(title, gates, statuses, record, context):
     counts=summarize(gates,statuses)
-    lines=[f'# Decision OS — {title}',f'Generated UTC: {datetime.now(timezone.utc).isoformat(timespec="seconds")}',
+    lines=[f'# Decision OS — {title}',f'Generated UTC: {datetime.now(UTC).isoformat(timespec="seconds")}',
       'Status: SELF-ASSESSED DRAFT; not an independent verification, certification or authorization.',
       f'Initiative: {record or "Not specified"}',f'Business decision: {context or "Not specified"}',
       f'Reviewed (self-reported): {counts["reviewed"]}/{counts["total"]}; gaps: {counts["gaps"]}; unassessed: {counts["unknown"]}',

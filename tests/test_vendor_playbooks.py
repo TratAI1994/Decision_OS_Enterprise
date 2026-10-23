@@ -6,7 +6,8 @@ TREE=ast.parse(MODULE.read_text())
 NODES={node.name:node for node in TREE.body if isinstance(node,(ast.FunctionDef,ast.ClassDef))}
 
 def get_pure_functions():
-    import sys, types
+    import sys
+    import types
     st=types.ModuleType('streamlit');sys.modules.setdefault('streamlit',st)
     from dataclasses import dataclass
     namespace={'dataclass':dataclass,'datetime':__import__('datetime').datetime,'timezone':__import__('datetime').timezone}

@@ -4,11 +4,13 @@ Presentation and deterministic help only. Authoritative finance and tenant
 controls remain in FastAPI; no client-side elevation or simulated approvals.
 """
 from __future__ import annotations
+
 import json
 import re
 import secrets
 from decimal import Decimal, InvalidOperation
 from typing import Any
+
 import streamlit as st
 
 STAGES = ("Overview", "1 · Plan", "2 · Measure", "3 · Finance review", "4 · Audit trail")
@@ -88,7 +90,7 @@ def validate_amount(value: str) -> str | None:
         return "Enter a decimal monetary amount (e.g. 12000000.00), with at most two decimal places."
     try:
         d = Decimal(s)
-        if not d.is_finite() or abs(d) > Decimal("9999999999999"):
+        if not d.is_finite() or abs(d) > Decimal(9999999999999):
             return "Amount must be finite and within the supported monetary range."
     except InvalidOperation:
         return "Amount is not a valid decimal."

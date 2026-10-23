@@ -1,8 +1,12 @@
 """R4: tenant, FK, human+agent, finance gates, conflict, source-based cost, proposal approvals."""
-import os,json
-from datetime import date,timedelta
+import json
+import os
+from datetime import date, timedelta
+
 from fastapi.testclient import TestClient
-from backend.api import app,configure
+
+from backend.api import app, configure
+
 
 def test_etes_end_to_end():
     os.environ['DECISION_OS_IDENTITIES']=json.dumps({

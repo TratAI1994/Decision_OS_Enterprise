@@ -1,7 +1,9 @@
 """Decision OS R7 — Event Ledger. Uses only authenticated server APIs."""
 from __future__ import annotations
+
 import json
 import secrets
+
 import streamlit as st
 
 

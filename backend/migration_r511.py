@@ -5,8 +5,11 @@ No existing rows are deleted/rewritten except necessary NULL-to-unknown for new 
 Never infer historical risk classification or confidence basis.
 """
 from __future__ import annotations
+
 import os
-from sqlalchemy import create_engine, inspect, text
+
+from sqlalchemy import inspect, text
+
 from .db import engine_for
 
 DECISION_COLUMNS={

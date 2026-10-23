@@ -1,8 +1,13 @@
-import importlib.util, sys, types, pathlib
+import importlib.util
+import pathlib
+import sys
+import types
+
 sys.modules.setdefault('streamlit',types.ModuleType('streamlit'))
 spec=importlib.util.spec_from_file_location('decision_operations',pathlib.Path(__file__).resolve().parents[1]/'ui'/'decision_operations.py')
 m=importlib.util.module_from_spec(spec);sys.modules[spec.name]=m;spec.loader.exec_module(m)
 from decimal import Decimal
+
 
 def test_no_finance_attestation_no_realized_gap():
     f=m.parse_financial_evidence({'financial_lifecycle':{'projected_value':{'amount':100,'currency':'USD','period':'2026'},'realized_value':{'amount':30,'currency':'USD','period':'2026'}}})
@@ -10,7 +15,7 @@ def test_no_finance_attestation_no_realized_gap():
 
 def test_verified_variance_and_currency_guard():
     x={'financial_lifecycle':{'projected_value':{'amount':100,'currency':'USD','period':'2026'},'realized_value':{'amount':30,'currency':'USD','period':'2026','verified_by':'finance1','verified_at':'2026-10-22','verification_reference':'GL-15'}}}
-    assert m.financial_variance(m.parse_financial_evidence(x)) == Decimal('70')
+    assert m.financial_variance(m.parse_financial_evidence(x)) == Decimal(70)
     x['financial_lifecycle']['realized_value']['currency']='INR'
     assert m.financial_variance(m.parse_financial_evidence(x)) is None
 

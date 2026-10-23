@@ -1,12 +1,16 @@
 import importlib.util
+import sys
+import types
 from pathlib import Path
+
 import pytest
-import types, sys
+
 sys.modules.setdefault("streamlit", types.ModuleType("streamlit"))
 p=Path(__file__).parents[1]/'ui'/'ecosystem_intelligence.py'
 spec=importlib.util.spec_from_file_location('ecosystem_intelligence',p)
 m=importlib.util.module_from_spec(spec)
 import sys
+
 sys.modules[spec.name]=m
 spec.loader.exec_module(m)
 

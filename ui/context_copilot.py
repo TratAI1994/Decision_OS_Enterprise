@@ -2,11 +2,14 @@
 No local DB access, LLM authority, persistence, or approval side effects.
 """
 from __future__ import annotations
+
+import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from urllib.parse import quote
-import re
+
 import streamlit as st
+
 
 @dataclass(frozen=True)
 class Context:

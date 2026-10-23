@@ -3,11 +3,13 @@ Read-only authenticated ledger. All snapshots are sourced from the R5.6 API;
 local digest checks are integrity demonstrations, NOT approval signatures.
 """
 from __future__ import annotations
+
 import hashlib
 import html
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 try:
     import streamlit as st
@@ -152,7 +154,7 @@ def render(api: Callable | None = None, navigate=None):
     if not ids:
         st.warning('Decision records have no stable server-generated IDs. Cannot provide a trustworthy ledger.')
         return
-    selected_id=st.selectbox('Decision',options=list(ids),format_func=lambda x:f'{str(ids[x].get("title") or "Untitled")} · {x}',key='ledger_decision')
+    selected_id=st.selectbox('Decision',options=list(ids),format_func=lambda x:f'{ids[x].get("title") or "Untitled"!s} · {x}',key='ledger_decision')
     d=ids[selected_id]
     col1,col2,col3=st.columns(3)
     col1.metric('Decision ID',str(selected_id)[:26]);col2.metric('Owner',str(get_value(d,'owner','decision_owner','created_by'))[:35]);col3.metric('Status',str(get_value(d,'status'))[:30])

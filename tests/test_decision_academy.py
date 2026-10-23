@@ -1,10 +1,12 @@
 import ast
 import importlib.util
 from pathlib import Path
+
 root=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('decision_academy',root/'ui'/'decision_academy.py')
 module=importlib.util.module_from_spec(spec)
 import sys
+
 sys.modules[spec.name]=module
 spec.loader.exec_module(module)
 

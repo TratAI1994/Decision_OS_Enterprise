@@ -1,9 +1,21 @@
 """SQLAlchemy PostgreSQL schema; SQLite allowed for isolated unit testing only."""
 import os
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, UniqueConstraint, Text, Float, CheckConstraint
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    create_engine,
+)
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import func
 from sqlalchemy.types import JSON
+
 Base = declarative_base()
 
 class Initiative(Base):

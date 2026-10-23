@@ -2,20 +2,35 @@
 LLM-free by default. No side-effect executor: approvals create accountable actions only.
 """
 from __future__ import annotations
-import hashlib, json, secrets
-from datetime import datetime, timezone
+
+import hashlib
+import json
+import secrets
+from datetime import UTC, datetime
 from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, select, update, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    select,
+    update,
+)
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
+
 from .db import Base
-from .intelligence import DecisionRecord
 from .execution import ExecutionTask
+from .intelligence import DecisionRecord
 from .models import AIRiskAssessment, RedTeamFinding
 
-def utc(): return datetime.now(timezone.utc)
+
+def utc(): return datetime.now(UTC)
 def digest(obj): return hashlib.sha256(json.dumps(obj,sort_keys=True,default=str).encode()).hexdigest()
 
 class DecisionSnapshot(Base):

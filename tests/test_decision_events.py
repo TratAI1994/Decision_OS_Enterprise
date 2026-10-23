@@ -1,16 +1,17 @@
 """Executable isolated R7 tests against real FastAPI endpoints and SQLite ORM.
 SQLite tests do not claim PostgreSQL trigger/WORM guarantees.
 """
-import uuid
 import pytest
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select, update
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+
 from backend.db import Base, Initiative
+from backend.decision_events import DecisionEvent, build_router
 from backend.intelligence import DecisionRecord
-from backend.decision_events import build_router, DecisionEvent, replay, verify_chain, digest, material
+
 
 @pytest.fixture
 def env():

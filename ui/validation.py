@@ -1,6 +1,7 @@
 """Reusable UI-side validation. The API remains the authoritative validator."""
 from __future__ import annotations
 
+
 def errors_for_assessment(data:dict)->dict[str,str]:
     rules={'title':(3,'Enter an AI system name with at least 3 characters.'),
            'intended_use':(20,'Describe intended use, affected people and business process (minimum 20 characters).'),

@@ -6,14 +6,13 @@ agent privileges based on performance.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
-from typing import Optional
 import hashlib
 import json
 import math
 import random
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import streamlit as st
 
@@ -112,8 +111,8 @@ def simulate_shadow(active_cost:float,active_benefit:float,shadow_cost:float,sha
             "p90":deltas[int(.90*(trials-1))],"shadow_better_fraction":sum(d>0 for d in deltas)/trials,
             "seed":seed,"trials":trials,"assumption":"illustrative uniform shocks, not empirically calibrated probabilities"}
 
-def evaluate_signal(signal: Optional[Signal], threshold:float, max_age_days:int, today: Optional[datetime]=None)->dict:
-    now=today or datetime.now(timezone.utc)
+def evaluate_signal(signal: Signal | None, threshold:float, max_age_days:int, today: datetime | None=None)->dict:
+    now=today or datetime.now(UTC)
     if signal is None:return {"status":"UNKNOWN","reason":"No source observation available"}
     if not signal.source_ref or not signal.verified:return {"status":"UNVERIFIED","reason":"Source was not independently verified"}
     if signal.observed_at.tzinfo is None:return {"status":"UNVERIFIED","reason":"Observation timestamp has no timezone"}
@@ -130,9 +129,9 @@ def autonomy_gate(action:str,scope:set[str],required_approval:bool,approved:bool
     if not policy_current:blockers.append("Fresh policy evaluation missing")
     return {"permitted":not blockers,"blockers":blockers,"notice":"Advisory gate only; backend must enforce all controls immediately before execution"}
 
-def proposal_packet(subject:str,findings:list[dict],scenario:Optional[dict]=None)->dict:
+def proposal_packet(subject:str,findings:list[dict],scenario:dict | None=None)->dict:
     packet={"kind":"DECISION_TWIN_REVIEW_DRAFT","subject":subject,"status":"NOT SUBMITTED / NOT APPROVED / NOT EXECUTABLE",
-            "created_at":datetime.now(timezone.utc).isoformat(),"findings":findings,
+            "created_at":datetime.now(UTC).isoformat(),"findings":findings,
             "proposed_actions":["Validate dependency evidence and accountable owners", "Evaluate alternatives with comparable assumptions", "Request independent policy and risk review"],
             "human_review_required":True,"caveats":["Graph reachability does not establish causality", "Scenario estimates are not realized financial results"]}
     if scenario:packet["scenario_assumptions"]=scenario
@@ -195,7 +194,7 @@ def render(api=None,navigate=None):
         verified=st.checkbox("Evidence independently verified (demonstration attestation only)",value=False)
         age=st.number_input("Age of observation (days)",min_value=0,max_value=3650,value=2)
         freshness=st.number_input("Maximum permitted age (days)",min_value=1,max_value=3650,value=30)
-        signal=Signal(metric,datetime.now(timezone.utc)-timedelta(days=age),observed,"user-defined",source,verified)
+        signal=Signal(metric,datetime.now(UTC)-timedelta(days=age),observed,"user-defined",source,verified)
         result=evaluate_signal(signal,limit,freshness)
         st.write(f"**{result['status']}** — {result['reason']}")
         st.caption("Independent verification must ultimately be performed by the backend; a checkbox is never proof.")

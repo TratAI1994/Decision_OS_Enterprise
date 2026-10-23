@@ -1,8 +1,11 @@
 """Additive R7 table migration; PostgreSQL rejects UPDATE/DELETE at database level."""
 import argparse
+
 from sqlalchemy import inspect, text
+
 from .db import engine_for
 from .decision_events import DecisionEvent
+
 
 def run(engine, apply=False):
     existing=set(inspect(engine).get_table_names())

@@ -3,15 +3,19 @@ Run: streamlit run ui/app.py; configure API_BASE_URL and DECISION_OS_UI_TOKEN.
 Authenticated demo bearer tokens are bootstrapping credentials, not production SSO.
 """
 from __future__ import annotations
-import os, json, math, re, secrets
+
+import json
+import os
+import re
+import secrets
 from datetime import datetime
-import requests
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-import streamlit as st
 from html import escape
+
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import requests
+import streamlit as st
 
 st.set_page_config(page_title='Decision OS | Enterprise Intelligence',page_icon='◈',layout='wide',initial_sidebar_state='expanded')
 st.markdown('''<style>
@@ -251,8 +255,8 @@ if not who:
 # ─── SECTION 2: TYPED DATA ADAPTERS ──────────────────────────────────
 # Backend enforces tenant and row authorization. Fetch failures stay explicit.
 from dataclasses import dataclass, field
-from typing import Any
-from datetime import timezone
+from datetime import UTC
+
 
 @dataclass(frozen=True)
 class BriefingData:
@@ -352,7 +356,7 @@ def make_briefing(data:BriefingData,selected_focus:str|None=None) -> dict:
             'baseline':None}
 
 def board_memo(data:BriefingData,section:dict,focus_name:str) -> str:
-    stamp=datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+    stamp=datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')
     lines=['# Decision OS — Weekly Executive Brief','Generated: '+stamp,'Scope: '+focus_name,
            'Read-only extract from authenticated backend responses. Not an immutable review snapshot.','',
            '## 1. Executive summary',f"{len(section['decisions'])} visible linked decisions; {len(section['krs'])} outcome contracts. Data completeness must be evaluated before conclusions.",
@@ -424,10 +428,9 @@ def render_executive_briefing():
         with st.container(border=True):
             st.markdown('**Evidence Coverage**');st.markdown('### Not assessable')
             st.caption(coverage['message']+' Evidence counts alone are not control compliance.')
-    with b:
-        with st.container(border=True):
-            st.markdown('**Decision Process Quality**');st.markdown('### Not assessable')
-            st.caption(quality['message']+' This is not a measure of investment success.')
+    with b, st.container(border=True):
+        st.markdown('**Decision Process Quality**');st.markdown('### Not assessable')
+        st.caption(quality['message']+' This is not a measure of investment success.')
     if not sec['krs']:st.warning('No Key Result contracts linked to this focus area.')
     for k in sec['krs']:
         state,obs=kr_measure(k)
@@ -486,7 +489,7 @@ def render_executive_briefing():
     with c3:
         if st.button('Inspect source OKRs',key='brief_okrs',use_container_width=True):navigate_to('Strategy & Outcomes R5.5')
     memo=board_memo(data,sec,focus_name)
-    st.download_button('Generate Weekly Board Memo · Markdown',memo,file_name='decision_os_board_brief_'+datetime.now(timezone.utc).strftime('%Y%m%d')+'.md',mime='text/markdown',key='brief_export')
+    st.download_button('Generate Weekly Board Memo · Markdown',memo,file_name='decision_os_board_brief_'+datetime.now(UTC).strftime('%Y%m%d')+'.md',mime='text/markdown',key='brief_export')
     st.caption('Downloaded memo is a current read-only export, not an immutable, independently attested Board Snapshot.')
 
 # ─── SECTION 6: MAIN APPLICATION ROUTING ──────────────────────────────
@@ -1378,7 +1381,11 @@ elif page=='AI Risk & Regulatory Office':
             if st.button('Refresh funding decisions',key='r5_refresh_decisions'):
                 _get.clear();st.rerun()
         # Reactive widgets outside a Streamlit form: changes validate on each rerun.
-        from ui.validation import errors_for_assessment, regulatory_details_required, autofill_from_context
+        from ui.validation import (
+            autofill_from_context,
+            errors_for_assessment,
+            regulatory_details_required,
+        )
         scope_key=f"r511_{init['id']}"
         decision=st.selectbox('Funding / executive decision *',valid,
             format_func=lambda d:d.get('title',d['id']),disabled=not valid,

@@ -4,10 +4,12 @@ Dry-run by default; run with --apply and an issued lead/editor API token.
 Creates clearly labeled synthetic demonstration records only, and never deletes records.
 """
 from __future__ import annotations
+
 import argparse
-from datetime import date, timedelta, datetime, timezone
 import os
 import sys
+from datetime import date, timedelta
+
 import requests
 
 PREFIX='[DEMO R5.5]'

@@ -4,16 +4,27 @@ Appended events capture the evaluation of a decision in this *slice*; the existi
 funding/Action Packet approval engine remains authoritative for execution.
 """
 from __future__ import annotations
+
 import hashlib
-import math
 import json
+import math
 import secrets
-from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, select, func
-from sqlalchemy.orm import Session
-from sqlalchemy.types import JSON
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    select,
+)
+from sqlalchemy.orm import Session
+from sqlalchemy.types import JSON
+
 from .db import Base
 from .intelligence import DecisionRecord
 
@@ -137,7 +148,7 @@ def build_router(identity,session,require):
         return list(db.scalars(select(DecisionEvent).where(DecisionEvent.tenant_id==actor.tenant,
             DecisionEvent.decision_id==did).order_by(DecisionEvent.seq)).all())
     def make_event(db,actor,did,kind,payload,request_id,previous):
-        now=datetime.now(timezone.utc)
+        now=datetime.now(UTC)
         e=DecisionEvent(id=secrets.token_hex(16),tenant_id=actor.tenant,decision_id=did,seq=len(previous)+1,
           event_type=kind,actor_id=actor.user,actor_role=actor.role,occurred_at=now,payload=payload,
           prev_hash=previous[-1].event_hash if previous else 'GENESIS',request_id=request_id)

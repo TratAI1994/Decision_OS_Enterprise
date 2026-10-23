@@ -1,9 +1,13 @@
 """Architecture Mastery — guided, vendor-neutral reference patterns and test plans."""
 from __future__ import annotations
-from dataclasses import dataclass
+
 import json
+from dataclasses import dataclass
+
 import streamlit as st
+
 from ui.context_copilot import render as render_copilot
+
 
 @dataclass(frozen=True)
 class Blueprint:

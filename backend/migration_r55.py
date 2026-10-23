@@ -3,9 +3,19 @@ No ALTER, DROP, backfill, or changes to existing R1-R5.4 tables.
 Usage: python -m backend.migration_r55 --check ; --apply
 """
 import argparse
+
 from sqlalchemy import inspect
+
 from .db import engine_for
-from .strategy_outcomes import FocusArea,Objective,KeyResult,StrategyDecisionLink,Observation,Assumption,DiscoveryExperiment
+from .strategy_outcomes import (
+    Assumption,
+    DiscoveryExperiment,
+    FocusArea,
+    KeyResult,
+    Objective,
+    Observation,
+    StrategyDecisionLink,
+)
 
 TABLES=[FocusArea.__table__,Objective.__table__,KeyResult.__table__,StrategyDecisionLink.__table__,Observation.__table__,Assumption.__table__,DiscoveryExperiment.__table__]
 

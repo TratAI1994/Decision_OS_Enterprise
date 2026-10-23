@@ -5,18 +5,32 @@ of causal impact. Application-level append-only; DB superusers still require
 separate immutability controls (WORM/anchoring).
 """
 from __future__ import annotations
-import hashlib, json, secrets
-from datetime import datetime, timezone
+
+import hashlib
+import json
+import secrets
+from datetime import UTC, datetime
 from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, select, update
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    select,
+    update,
+)
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
+
 from .db import Base
-from .intelligence import DecisionRecord
 from .decision_governance import ActionPacket
-from .strategy_outcomes import Assumption, StrategyDecisionLink, KeyResult, Observation
+from .intelligence import DecisionRecord
+from .strategy_outcomes import Assumption, KeyResult, Observation, StrategyDecisionLink
 
 RUBRIC_VERSION='r5.6-evaluation-1'
 WEIGHTS={'evidence':20,'economics':15,'risk':15,'counterfactual':15,'alternatives':10,'accountability':15,'measurement':10}
@@ -35,7 +49,7 @@ class DecisionEvaluation(Base):
     score=Column(Integer,nullable=True)
     context=Column(JSON,nullable=True)
     content_hash=Column(String(64),nullable=True)
-    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(timezone.utc))
+    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(UTC))
     locked_at=Column(DateTime(timezone=True),nullable=True)
     request_id=Column(String(100),nullable=False)
     __table_args__=(UniqueConstraint('tenant_id','request_id',name='uq_di_eval_request'),)
@@ -107,7 +121,7 @@ def build_router(identity,session,require,events,find_initiative):
         data={'id':e.id,'decision_id':e.decision_id,'rubric_version':e.rubric_version,'status':e.status,'answers':e.answers,
               'author':e.author,'reviewer':e.reviewer,'score':e.score,'created_at':str(e.created_at),'locked_at':str(e.locked_at) if e.locked_at else None,
               'context':e.context,'content_hash':e.content_hash}
-        data['hash_valid']=content_hash({'decision_id':e.decision_id,'rubric_version':e.rubric_version,'answers':e.answers,'context':e.context,'score':e.score,'author':e.author,'reviewer':e.reviewer,'locked_at':e.locked_at.replace(tzinfo=timezone.utc).isoformat()})==e.content_hash if e.content_hash and e.locked_at else None
+        data['hash_valid']=content_hash({'decision_id':e.decision_id,'rubric_version':e.rubric_version,'answers':e.answers,'context':e.context,'score':e.score,'author':e.author,'reviewer':e.reviewer,'locked_at':e.locked_at.replace(tzinfo=UTC).isoformat()})==e.content_hash if e.content_hash and e.locked_at else None
         return data
 
     @router.get('/rubric')
@@ -161,7 +175,7 @@ def build_router(identity,session,require,events,find_initiative):
         # Compare-and-swap rejects concurrent attempts to lock the same draft.
         updated=db.execute(update(DecisionEvaluation).where(DecisionEvaluation.id==eid,DecisionEvaluation.tenant_id==actor.tenant,DecisionEvaluation.status=='draft').values(status='locked')).rowcount
         if updated!=1:raise HTTPException(409,'Evaluation already locked by another reviewer')
-        e.context=context;e.score=checks['score'];e.reviewer=actor.user;e.locked_at=datetime.now(timezone.utc);e.status='locked'
+        e.context=context;e.score=checks['score'];e.reviewer=actor.user;e.locked_at=datetime.now(UTC);e.status='locked'
         e.content_hash=content_hash({'decision_id':e.decision_id,'rubric_version':e.rubric_version,'answers':e.answers,'context':e.context,'score':e.score,'author':e.author,'reviewer':e.reviewer,'locked_at':e.locked_at.isoformat()})
         events(db,actor,'evaluation.locked',eid,{'snapshot_sha256':e.content_hash,'rubric_version':RUBRIC_VERSION})
         db.commit();return view(e)

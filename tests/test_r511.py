@@ -1,9 +1,17 @@
-import os,json
-from sqlalchemy import create_engine,text,inspect
+import json
+import os
+
 from fastapi.testclient import TestClient
-from backend.api import app,configure
+from sqlalchemy import create_engine, inspect, text
+
+from backend.api import app, configure
 from backend.migration_r511 import migrate
-from ui.validation import errors_for_assessment,autofill_from_context,regulatory_details_required
+from ui.validation import (
+ autofill_from_context,
+ errors_for_assessment,
+ regulatory_details_required,
+)
+
 
 def test_nullable_migration_idempotent_preserves_existing_rows():
  engine=create_engine('sqlite:///:memory:')

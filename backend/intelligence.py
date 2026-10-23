@@ -4,15 +4,30 @@ AI cost, workforce, agent registry, risk and scenario planning.
 No generated narrative is attested; scenarios are not actual outcomes.
 """
 from __future__ import annotations
-import json, secrets, re, math, hashlib
-from datetime import datetime, timezone
+
+import hashlib
+import json
+import math
+import secrets
+from datetime import UTC, datetime
 from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, String, Integer, DateTime, Float, ForeignKey, select, update, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    select,
+    update,
+)
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
-from .db import Base, Initiative, Benefit
+
+from .db import Base, Benefit, Initiative
+
 
 class DecisionRecord(Base):
     __tablename__='di_decisions'
@@ -39,7 +54,7 @@ class DecisionRecord(Base):
     approved_at=Column(DateTime(timezone=True),nullable=True)
     execution_started_at=Column(DateTime(timezone=True),nullable=True)
     closed_at=Column(DateTime(timezone=True),nullable=True)
-    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(timezone.utc))
+    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(UTC))
 
 class OfficeRecord(Base):
     __tablename__='di_office_records'
@@ -51,7 +66,7 @@ class OfficeRecord(Base):
     payload=Column(JSON,nullable=False)
     evidence_status=Column(String(32),nullable=False,default='self_reported')
     version=Column(Integer,nullable=False,default=1)
-    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(timezone.utc))
+    created_at=Column(DateTime(timezone=True),nullable=False,default=lambda:datetime.now(UTC))
 
 VALID_KINDS={'risk','economics','agent','copilot','workforce','twin_node','twin_edge'}
 VALID_CLASS={'modeled','self_reported','independently_verified','finance_reconciled'}

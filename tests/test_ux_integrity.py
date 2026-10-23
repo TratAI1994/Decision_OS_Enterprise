@@ -1,7 +1,11 @@
 """R3 UX/backend integrity regression: tenant FKs, request replay, source-aware board briefs."""
-import os,json
+import json
+import os
+
 from fastapi.testclient import TestClient
+
 from backend.api import app, configure
+
 
 def test_reference_and_idempotency_boundary():
     os.environ['DECISION_OS_IDENTITIES']=json.dumps({

@@ -2,9 +2,11 @@
 No network calls, no credentials, no side effects. Streamlit is imported only during render.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 from html import escape
 from typing import NamedTuple
+
 
 @dataclass(frozen=True)
 class Lesson:

@@ -1,8 +1,11 @@
 """R5.6 safe additive migration: create only di_evaluations; no existing tables altered."""
 import argparse
+
 from sqlalchemy import inspect
+
 from .db import engine_for
 from .decision_evaluation import DecisionEvaluation
+
 
 def run(engine,apply=False):
     present=set(inspect(engine).get_table_names())

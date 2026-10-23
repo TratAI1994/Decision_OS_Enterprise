@@ -1,11 +1,16 @@
-import ast, pathlib, sys, types, unittest
+import ast
+import sys
+import types
+import unittest
 from pathlib import Path
+
 BASE=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(BASE))
 try:import streamlit
 except ImportError:sys.modules['streamlit']=types.ModuleType('streamlit')
-from ui.context_copilot import resolve,answer
 from ui.architecture_mastery import BLUEPRINTS
+from ui.context_copilot import answer, resolve
+
 
 class TestContext(unittest.TestCase):
  def test_tab_specific(self):

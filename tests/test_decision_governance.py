@@ -1,6 +1,10 @@
-import os,json
+import json
+import os
+
 from fastapi.testclient import TestClient
-from backend.api import app,configure
+
+from backend.api import app, configure
+
 
 def test_packets_isolation_policy_review_replay():
  os.environ['DECISION_OS_IDENTITIES']=json.dumps({'lead':{'user':'lead','tenant':'A','role':'lead'},'reviewer':{'user':'reviewer','tenant':'A','role':'reviewer'},'other':{'user':'other','tenant':'B','role':'lead'},'finance':{'user':'fin','tenant':'A','role':'finance'}})

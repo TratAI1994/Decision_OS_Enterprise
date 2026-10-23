@@ -1,12 +1,23 @@
 """R5 additive SQLAlchemy tables. Existing database models are in backend.db.
 Import this module before Base.metadata.create_all(); deploy migrations in production.
 """
-from datetime import datetime,timezone
-from sqlalchemy import Column,String,Integer,Float,DateTime,ForeignKey,UniqueConstraint,CheckConstraint,Text
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.types import JSON
+
 from .db import Base
 
-def utcnow(): return datetime.now(timezone.utc)
+
+def utcnow(): return datetime.now(UTC)
 
 class AIRiskAssessment(Base):
     __tablename__='r5_ai_risk_assessments'

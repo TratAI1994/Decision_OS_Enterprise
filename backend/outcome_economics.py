@@ -1,13 +1,26 @@
 """R8 finance outcome records: append-only attestations, not autonomous ROI claims."""
 from __future__ import annotations
-import hashlib, json, secrets
-from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
+import hashlib
+import json
+import secrets
+from datetime import UTC, datetime
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, select
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    select,
+)
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
+
 from .db import Base
 from .intelligence import DecisionRecord
 
@@ -17,7 +30,7 @@ ATTRIBUTION={'experimental','quasi_experimental','correlational','estimated','un
 def money_cents(raw:str)->int:
     try:
         value=Decimal(raw)
-        if not value.is_finite() or abs(value)>Decimal('1000000000000') or value.as_tuple().exponent < -2:
+        if not value.is_finite() or abs(value)>Decimal(1000000000000) or value.as_tuple().exponent < -2:
             raise ValueError('Value must be finite, <= 1 trillion, and at most two decimal places')
         return int((value/CENT).to_integral_exact(rounding=ROUND_HALF_UP))
     except (InvalidOperation,ValueError,TypeError,ArithmeticError) as exc:
@@ -150,7 +163,7 @@ def build_router(identity,session,require):
         return db.scalar(select(OutcomeEvent).where(OutcomeEvent.tenant_id==actor.tenant,OutcomeEvent.request_id==key))
     def append(db,actor,did,kind,payload,key,rows):
         e=OutcomeEvent(id=secrets.token_hex(16),tenant_id=actor.tenant,decision_id=did,seq=len(rows)+1,
-                       event_type=kind,actor_id=actor.user,actor_role=actor.role,occurred_at=datetime.now(timezone.utc),
+                       event_type=kind,actor_id=actor.user,actor_role=actor.role,occurred_at=datetime.now(UTC),
                        payload=payload,prev_hash=rows[-1].event_hash if rows else 'GENESIS',request_id=key)
         e.event_hash=event_hash(e.prev_hash,material(e));db.add(e)
         try:db.flush();db.commit()

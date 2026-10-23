@@ -2,14 +2,17 @@
 No regulation classification is a legal determination; no automatic security scan is claimed.
 """
 from __future__ import annotations
+
 import secrets
-from fastapi import APIRouter,Depends,HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
-from pydantic import BaseModel,Field
-from sqlalchemy import select,update
 from sqlalchemy.orm import Session
-from .models import AIRiskAssessment,AIControlEvidence,RedTeamFinding
+
 from .intelligence import DecisionRecord
+from .models import AIControlEvidence, AIRiskAssessment, RedTeamFinding
 
 FRAMEWORKS={
  'NIST_AI_RMF':('GOVERN','MAP','MEASURE','MANAGE'),

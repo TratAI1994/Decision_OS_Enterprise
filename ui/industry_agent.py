@@ -5,11 +5,13 @@ approve a decision, store memory, or mutate records. Invoked only on explicit us
 Optional requirements: `pip install langgraph`; local Ollama HTTP available to the UI.
 """
 from __future__ import annotations
-from typing import TypedDict
+
 import json
 import os
-import urllib.request
 import urllib.error
+import urllib.request
+from typing import TypedDict
+
 
 class State(TypedDict, total=False):
     industry: str
@@ -38,7 +40,7 @@ def run_local_graph(industry: str, scenario: str, question: str, model: str='lla
     if not question.strip() or len(question)>700: raise ValueError('Enter a question of 1–700 characters.')
     if len(industry)>80 or len(scenario)>1400: raise ValueError('Invalid context size.')
     try:
-        from langgraph.graph import StateGraph, START, END
+        from langgraph.graph import END, START, StateGraph
     except ImportError as exc:
         raise RuntimeError('Optional LangGraph is not installed in the UI Python environment.') from exc
     def draft(s: State) -> State:

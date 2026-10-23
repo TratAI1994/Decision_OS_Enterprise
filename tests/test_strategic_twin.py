@@ -1,7 +1,8 @@
-import ast
+import importlib.util
+import sys
+import types
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
-import sys, types, importlib.util
 
 p=Path(__file__).resolve().parents[1]/'ui'/'strategic_twin.py'
 # Module import is safe without streamlit installed; scoring must not depend on it.
@@ -35,16 +36,16 @@ def test_scenario_rejects_negative():
     with pytest.raises(ValueError):m.compare_alternatives(-5,1,2,3)
 
 def test_unverified_signal():
-    sig=m.Signal('Cost',datetime.now(timezone.utc),128,'USD','',False)
+    sig=m.Signal('Cost',datetime.now(UTC),128,'USD','',False)
     assert m.evaluate_signal(sig,120,7)['status']=='UNVERIFIED'
 
 def test_stale_overrides_breach():
-    now=datetime.now(timezone.utc)
+    now=datetime.now(UTC)
     sig=m.Signal('Cost',now-timedelta(days=31),128,'USD','ledger:12',True)
     assert m.evaluate_signal(sig,120,7,now)['status']=='STALE'
 
 def test_breach_requires_review_not_invalidation():
-    now=datetime.now(timezone.utc)
+    now=datetime.now(UTC)
     sig=m.Signal('Cost',now,128,'USD','ledger:12',True)
     assert m.evaluate_signal(sig,120,7,now)['status']=='REVIEW REQUIRED'
 

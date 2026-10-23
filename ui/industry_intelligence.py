@@ -5,15 +5,13 @@ an authenticated, tenant-scoped API adapter. Copilot is deterministic, not an LL
 No data is written, submitted, approved, or executed by this module.
 """
 from __future__ import annotations
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
-from math import isfinite
-from typing import Callable
-import hashlib
+
 import json
 import random
 import re
+from collections.abc import Callable
+from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 
 import streamlit as st
 
@@ -51,7 +49,7 @@ INDUSTRIES: dict[str, Industry] = {
 SAMPLE_PROMPTS = ('What evidence is missing?', 'Calculate 20% of 4500000', 'If expected 20 and observed 15, what is the gap?', 'Evaluate the industry scenario', 'Draft a governed initiative')
 
 
-def decimal_number(raw: str | int | float | Decimal) -> Decimal | None:
+def decimal_number(raw: str | float | Decimal) -> Decimal | None:
     if isinstance(raw, bool): return None
     try:
         value = Decimal(str(raw).replace(',',''))
@@ -117,11 +115,11 @@ def decision_copilot_response(question: str, industry: Industry, evidence: list[
     if not q: return {'kind':'REFUSAL','text':'Please ask a specific question.','references':[]}
     if len(q)>700: return {'kind':'REFUSAL','text':'Question too long (700-character limit).','references':[]}
     # Strict numeric grammar: avoids arbitrary Python evaluation or numerals found in IDs.
-    m=re.fullmatch(r'(?:calculate\s+)?(-?\d+(?:\.\d+)?)\s*%\s+of\s+(-?\d+(?:\.\d+)?)\s*\??',q,re.I)
+    m=re.fullmatch(r'(?:calculate\s+)?(-?\d+(?:\.\d+)?)\s*%\s+of\s+(-?\d+(?:\.\d+)?)\s*\??',q,re.IGNORECASE)
     if m:
         a,b=map(Decimal,m.groups()); result=(a*b)/100
         return {'kind':'CALCULATION','text':f'{a}% of {b} = {result:,.2f}. This is arithmetic, not a verified financial outcome.','references':[]}
-    m=re.fullmatch(r'(?:if\s+)?expected\s+(-?\d+(?:\.\d+)?)\s+and\s+observed\s+(-?\d+(?:\.\d+)?),?\s+what\s+is\s+the\s+gap\??',q,re.I)
+    m=re.fullmatch(r'(?:if\s+)?expected\s+(-?\d+(?:\.\d+)?)\s+and\s+observed\s+(-?\d+(?:\.\d+)?),?\s+what\s+is\s+the\s+gap\??',q,re.IGNORECASE)
     if m:
         result=calculate_gap(*m.groups())
         return {'kind':'CALCULATION','text':f'Observed minus expected = {result["signed_gap"]}; relative change = {result["gap_pct"] or "not defined"}%. Correlation and attribution are not established.','references':[]}
