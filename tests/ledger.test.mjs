@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {ledgerProjection,validateDecisionId,isAuthoritativelySigned} from '../src/ledger-model.js';
+const ev={seq:1,id:'ev1',event_type:'decision.baseline_recorded',actor_id:'author',role:'lead',timestamp:'2026-10-01T00:00:00Z',prev_hash:'GENESIS',event_hash:'a1',payload:{expected:'12'}};
+const response={decision_id:'D-1',verification:{valid:true},state:{status:'draft',version:1,snapshot:{expected:'12'}},events:[ev],authority:'Not a funding approval'};
+test('R7 replay contract projected from real server keys',()=>{const p=ledgerProjection(response);assert.equal(p.integrity,'LOCAL_HASH_CONSISTENT');assert.equal(p.events[0].previous,'GENESIS');assert.equal(p.reviewStatus,'draft');});
+test('missing verification is never green',()=>assert.equal(ledgerProjection({...response,verification:null}).integrity,'NOT_VERIFIED'));
+test('explicit integrity fail not promoted',()=>assert.equal(ledgerProjection({...response,verification:{valid:false}}).integrity,'INTEGRITY_FAILED'));
+test('invalid event order rejected',()=>assert.throws(()=>ledgerProjection({...response,events:[{...ev,seq:2}]}),/Nonconsecutive/));
+test('invalid response rejected',()=>assert.throws(()=>ledgerProjection({}),/Unexpected/));
+test('decision identifiers validated',()=>{assert.equal(validateDecisionId('D-1'),'D-1');for(const value of ['','/admin','a?b','../secret'])assert.throws(()=>validateDecisionId(value));});
+test('client never claims external signing',()=>assert.equal(isAuthoritativelySigned(ledgerProjection(response)),false));
+test('ledger component only uses GET record loader',()=>{const s=readFileSync(new URL('../src/DecisionLedger.jsx',import.meta.url),'utf8');assert.match(s,/readEnterpriseRecord/);assert.doesNotMatch(s,/method:\s*['"]POST/);assert.match(s,/role="tablist"/);});
+test('actual R7 route used',()=>{const s=readFileSync(new URL('../src/DecisionLedger.jsx',import.meta.url),'utf8');assert.match(s,/v1\/decision-events\/\$\{/);});
+test('main navigation routes ledger to dedicated workspace',()=>{const s=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');assert.match(s,/view==='ledger'&&<DecisionLedger/);});

@@ -1,45 +1,53 @@
-# R9 Guided Control Plane — Decision OS
+# Decision OS — Integrated Enterprise Console (consolidated safe release)
 
-## What changed
+## What is included
 
-This is an incremental, **UI-only replacement** for `ui/outcome_economics.py`. It is visually inspired by the dark workflow diagrams of managed pipeline consoles, not an AWS asset or a replica. It preserves the existing R8 API paths, finance-only attestation and reporter/attester separation of duties, as implemented in R8's backend. It does not change the backend, API routes, migrations or `ui/app.py`.
+A complete, locally runnable **frontend source tree** assembling the latest R10.3–R10.6 modules, functional R7 Decision Ledger, R8 read-only Outcome Economics, Risk & Controls, R9.9 authenticated-source evidence viewer, Transformation Workbench, Strategy Lab (ten disciplines), Portfolio & Agile Delivery sandbox, and the reversible professional light theme. New in this package is an 8-dimension, 5-objective AI transformation maturity and framework-fitment workbench with explainable weighted priority actions.
 
-- Dark console header with status context and a connected Graphviz workflow map (expected value → observation → finance review → event replay)
-- Clickable workflow stages, each backed by existing R8 forms and API calls
-- Right-side contextual evidence advisor, questions and prerequisites
-- Explicit assurance/readiness panel that **withholds** snapshot, kill-criteria and independently validated ERP/GL claims
-- Deterministic stage-progress calculation based on retrieved authoritative events
-- All navigational behavior uses Streamlit controls; the graph is a depiction, not a clickable editor
+**This is not full production implementation of every R10–R12 release.** The connected Journey, finance operations, execution, graph persistence, IAM and source-system integrations are limited by the existing backend APIs. Do not treat navigation or simulated data as completion. Human approval, finance attestation and tenant enforcement remain backend responsibilities.
 
-## Installation (existing R8 must already work)
+## Safe install (Windows)
 
-1. Back up `D:\Users\atmm1\Decision_OS_Enterprise\ui\outcome_economics.py`.
-2. Copy the contained `ui/outcome_economics.py` to that directory (retain your existing API/backend files).
-3. In your Windows terminal:
+1. Back up your existing `D:\Users\atmm1\Decision_OS_Enterprise\frontend` folder.
+2. Extract this archive in a **separate folder** first. It includes a `frontend/` folder; compare local modifications before replacing. This is an integrated baseline, not a merge against unseen Windows edits.
+3. Copy or merge `frontend/` into your Decision OS project, preserving a backup.
+4. Run from PowerShell:
 
 ```powershell
-cd D:\Users\atmm1\Decision_OS_Enterprise
-python -m pytest tests/test_r9_control_plane.py -q
-# Tests require pytest installed in whichever Python environment runs them.
-docker compose up -d --build ui
+cd D:\Users\atmm1\Decision_OS_Enterprise\frontend
+npm install
+npm test
+npm run build
+npm run dev
 ```
 
-4. Navigate to **Decision Infrastructure → Outcome Economics** at http://127.0.0.1:8502.
+5. Open http://127.0.0.1:5173 and check **AI Readiness Assessment**, Portfolio & Agile Delivery, Decision Ledger, Outcome Economics, Risk, Engineering, Strategy Lab and Trust Validation.
+6. Your existing API host port is `8001`; `vite.config.js` proxies browser `/api` requests there. If your Compose port differs, update the Vite proxy.
 
-If the Graphviz Python and native `dot` packages are missing, install them in the UI image (other Decision OS modules also use Graphviz). The new visual graph falls back to textual step navigation when Graphviz import fails; rendering availability depends on the deployed Streamlit runtime.
+## One-command gate
 
-## Why this is not yet R9 governance-complete
+From archive root (or project root after merging):
 
-This release improves discoverability and adoption. It does **not** implement the missing R7.1 atomic approval-time snapshot, predeclared kill criterion enforcement, independently trusted digital signatures or direct authenticated ERP/GL retrieval. The assurance panel says **Not verified** for controls not exposed by the R8 API. Existing R8 finance attestations record a finance user and source reference, not independent source-system retrieval.
+```powershell
+node tools\verify-release.mjs
+```
 
-### Recommended R9 backend gates
+Tests and production build must both pass. A machine-readable `frontend/release-gate-report.json` is written with unverified external-system gates explicitly `NOT_TESTED`. `production_certified` remains false regardless of local frontend success.
 
-1. Atomic approval-time snapshot in one PostgreSQL transaction covering decision version, evidence digests, assumption versions, expected financial baseline, policy versions and preapproved kill criteria. Capture only during the actual authoritative approval operation.
-2. Server-enforced kill criterion evaluation against consecutive verified observation periods; create policy-controlled review events, *not* automatic financial termination.
-3. As-of replay plus database tests for mutation attempts, role separation, concurrent approvals, tenant isolation, missing observations and tampered source records.
-4. Finance evidence reconciliation adapter with delegated identity and record hashes; avoid claiming verified savings from a free-text GL reference.
-5. Controlled agent execution only after server-side authorization with fresh policy checks.
+## Results in this build environment
 
-## Tests
+- `npm test`: **72 PASS**, 0 fail.
+- Vite production compile: **not run here**, because dependencies are unavailable in this isolated container (no cached node_modules or npm registry access).
+- Browser visual/keyboard testing, real API read-contract tests, PostgreSQL negative tests, concurrent ingestion, identity provider, Jenkins/SBOM/signing, finance ERP: **not tested here**.
 
-18 local unit tests passed (the prior R8 UI test suite plus eight new tests). No live Windows Docker / PostgreSQL / browser test has been run here. The graph and CSS should be visually checked in both Streamlit dark and light settings and at narrow viewport widths.
+## Important limitations and architectural boundaries
+
+- Read-only React workspaces do not perform privileged backend changes.
+- Imported test reports cannot self-certify. Signed collector ingestion does not verify business content.
+- Maturity scores are **self-reported**, weightings are transparent advisory assumptions; no audited enterprise rating is implied.
+- The portfolio planner supports a small bounded sandbox, **not** general enterprise MILP at scale.
+- Sample portfolio plans are illustrations, not customer production records.
+- No source-system connector was newly deployed, no production agent executor was enabled, no payments were automated.
+- Reusing the frontend does **not** automatically connect R10–R12 Knowledge Graph persistence or historical finance data.
+
+See `docs/HLD_LLD.md` and `docs/ROADMAP_GATES.md` for subsystem architecture and remaining integration gates.

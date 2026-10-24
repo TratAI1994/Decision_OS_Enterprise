@@ -1,0 +1,15 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {DISCIPLINES,recommendDisciplines,marketSizing,unitEconomics,discountedCashFlow,riskMatrix,scenarioExpectedValue,breakEven,capitalPriority,constraintThroughput,businessImpact,countryExposure} from '../src/strategy-engine.js';
+test('all ten strategic disciplines have models and frameworks',()=>{assert.equal(DISCIPLINES.length,10);for(const d of DISCIPLINES){assert.ok(d.models.length);assert.ok(d.frameworks.length);}});
+test('industry fitment preserves all disciplines instead of falsely hiding options',()=>assert.equal(recommendDisciplines('Life Sciences').length,10));
+test('TAM SAM SOM transparent calculation',()=>assert.deepEqual([marketSizing({accounts:100,annualSpend:20,serviceableShare:.5,obtainableShare:.2}).tam,marketSizing({accounts:100,annualSpend:20,serviceableShare:.5,obtainableShare:.2}).som],[2000,200]));
+test('unit economics handles negative margin without invented LTV',()=>{const x=unitEconomics({price:10,variableCost:12,cac:20,monthlyChurn:.1});assert.equal(x.contribution,-2);assert.equal(x.ltv,null)});
+test('DCF finite discounted sum',()=>assert.ok(Math.abs(discountedCashFlow({initialInvestment:100,annualCashFlows:[110],discountRate:.1}).npv)<1e-10));
+test('scenario probabilities fail closed',()=>assert.throws(()=>scenarioExpectedValue([{probability:.5,outcome:1}]),/sum to 1/));
+test('risk residual exposure bounded',()=>assert.equal(riskMatrix({likelihood:.2,impact:100,mitigationEffectiveness:.5}).residualExposure,10));
+test('break even rejects zero contribution',()=>assert.throws(()=>breakEven({fixedCost:100,unitPrice:10,unitVariableCost:10})));
+test('capital rank respects ratios',()=>assert.equal(capitalPriority([{name:'A',npv:5,capital:100},{name:'B',npv:2,capital:10}])[0].name,'B'));
+test('TOC bottleneck uses minimum capacity',()=>assert.equal(constraintThroughput({steps:[{name:'Fast',unitsPerHour:20},{name:'Slow',unitsPerHour:3}]}).bottleneck.name,'Slow'));
+test('BIA ranks modeled loss',()=>assert.equal(businessImpact({processes:[{name:'a',hourlyLoss:1,maxHours:1},{name:'b',hourlyLoss:2,maxHours:5}]} )[0].name,'b'));
+test('country risk assumptions not verified as predictions',()=>assert.equal(countryExposure({exposures:[{country:'X',capital:100,disruptionProbability:.1,lossGivenDisruption:.5}]}).expectedLoss,5));
+test('NaN and infinity rejected',()=>assert.throws(()=>marketSizing({accounts:Infinity,annualSpend:2,serviceableShare:.5,obtainableShare:.3})));

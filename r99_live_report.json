@@ -1,0 +1,49 @@
+{
+  "schema": "r99.9-live-assurance-v1",
+  "generated_at": "2026-10-24T09:40:00.087969+00:00",
+  "endpoint": "http://127.0.0.1:8001/v1/source-evidence/ingest",
+  "evidence_id": "6479e6e822822adb181b9c2fdc564e47",
+  "results": [
+    {
+      "name": "signed_ingestion",
+      "result": "PASS",
+      "detail": "HTTP 201; expected 201 with matching digest and limited trust classification"
+    },
+    {
+      "name": "nonce_replay",
+      "result": "PASS",
+      "detail": "HTTP 409; expected 409"
+    },
+    {
+      "name": "modified_bytes",
+      "result": "PASS",
+      "detail": "HTTP 422; expected 401 or 422"
+    },
+    {
+      "name": "modified_digest",
+      "result": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "concurrent_same_nonce",
+      "result": "PASS",
+      "detail": "HTTP statuses [201, 409]; expected [201,409]"
+    },
+    {
+      "name": "postgres_trigger",
+      "result": "NOT_TESTED",
+      "detail": "Requires explicit disposable PostgreSQL connection and test acknowledgement"
+    },
+    {
+      "name": "cross_tenant_retrieval",
+      "result": "NOT_TESTED",
+      "detail": "Requires a distinct authorized tenant token; do not infer from HMAC scope"
+    },
+    {
+      "name": "external_anchoring",
+      "result": "NOT_IMPLEMENTED",
+      "detail": "No external cryptographic anchor configured"
+    }
+  ],
+  "certified": false
+}

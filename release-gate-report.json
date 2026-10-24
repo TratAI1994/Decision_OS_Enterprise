@@ -1,0 +1,38 @@
+{
+  "schema": "decision-os-release-check-v1",
+  "results": [
+    {
+      "gate": "node_unit_tests",
+      "status": "PASS",
+      "exit_code": 0,
+      "detail": ": scenario probabilities fail closed\nok 65 - scenario probabilities fail closed\n  ---\n  duration_ms: 0.557757\n  type: 'test'\n  ...\n# Subtest: risk residual exposure bounded\nok 66 - risk residual exposure bounded\n  ---\n  duration_ms: 0.284828\n  type: 'test'\n  ...\n# Subtest: break even rejects zero contribution\nok 67 - break even rejects zero contribution\n  ---\n  duration_ms: 0.190637\n  type: 'test'\n  ...\n# Subtest: capital rank respects ratios\nok 68 - capital rank respects ratios\n  ---\n  duration_ms: 0.540471\n  type: 'test'\n  ...\n# Subtest: TOC bottleneck uses minimum capacity\nok 69 - TOC bottleneck uses minimum capacity\n  ---\n  duration_ms: 0.500832\n  type: 'test'\n  ...\n# Subtest: BIA ranks modeled loss\nok 70 - BIA ranks modeled loss\n  ---\n  duration_ms: 0.321603\n  type: 'test'\n  ...\n# Subtest: country risk assumptions not verified as predictions\nok 71 - country risk assumptions not verified as predictions\n  ---\n  duration_ms: 0.211848\n  type: 'test'\n  ...\n# Subtest: NaN and infinity rejected\nok 72 - NaN and infinity rejected\n  ---\n  duration_ms: 0.155323\n  type: 'test'\n  ...\n1..72\n# tests 72\n# suites 0\n# pass 72\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 226.452428\n"
+    },
+    {
+      "gate": "vite_production_build",
+      "status": "BLOCKED",
+      "detail": "Node dependencies are not installed; run npm install followed by npm run build in your Windows project"
+    },
+    {
+      "gate": "live_postgresql_negative_controls",
+      "status": "NOT_TESTED",
+      "detail": "Requires R9.9-LV execution in an isolated PostgreSQL test environment"
+    },
+    {
+      "gate": "real_jenkins_to_deployment_provenance",
+      "status": "NOT_TESTED",
+      "detail": "No Jenkins deployment source evidence connected by this release"
+    },
+    {
+      "gate": "finance_erp_reconciliation",
+      "status": "NOT_TESTED",
+      "detail": "Requires authorized GL/ERP connector and independent validation"
+    },
+    {
+      "gate": "browser_accessibility_and_auth",
+      "status": "NOT_TESTED",
+      "detail": "Requires actual browser and supported user identity tests"
+    }
+  ],
+  "production_certified": false,
+  "build_ready": false
+}

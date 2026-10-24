@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {GRAPH_TYPES,PHASES,TRUST_CONTROLS,summarizeReport,normalizedEndpoint} from '../src/contracts.js';
+test('journey exposes eight distinct steps',()=>{assert.equal(PHASES.length,8);assert.equal(new Set(PHASES.map(x=>x.id)).size,8)});
+test('risk is a first class lineage node',()=>assert.ok(GRAPH_TYPES.includes('Risk')));
+test('all steps declare nonempty evidence',()=>assert.ok(PHASES.every(x=>x.artifacts.length>0&&x.help)));
+test('negative controls explicitly not tested',()=>{assert.equal(TRUST_CONTROLS.filter(x=>x.status==='NOT_TESTED').length,5)});
+test('local report cannot self certify even if maliciously declares certified true',()=>{const result=summarizeReport({certified:true,checks:[{status:'PASS'}]});assert.equal(result.certified,false);assert.equal(result.counts.PASS,1)});
+test('unknown status cannot create a success count',()=>{let x=summarizeReport({checks:[{status:'CERTIFIED'},{status:'PASS'}]});assert.equal(x.counts.PASS,1)});
+test('bad port rejected',()=>assert.throws(()=>normalizedEndpoint('70000')));
+test('host-only address is generated',()=>assert.equal(normalizedEndpoint(8001),'http://127.0.0.1:8001'));

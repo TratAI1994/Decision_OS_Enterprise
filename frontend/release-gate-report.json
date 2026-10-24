@@ -1,0 +1,39 @@
+{
+  "schema": "decision-os-release-check-v1",
+  "results": [
+    {
+      "gate": "node_unit_tests",
+      "status": "FAIL",
+      "exit_code": null,
+      "detail": ""
+    },
+    {
+      "gate": "vite_production_build",
+      "status": "FAIL",
+      "exit_code": null,
+      "detail": ""
+    },
+    {
+      "gate": "live_postgresql_negative_controls",
+      "status": "NOT_TESTED",
+      "detail": "Requires R9.9-LV execution in an isolated PostgreSQL test environment"
+    },
+    {
+      "gate": "real_jenkins_to_deployment_provenance",
+      "status": "NOT_TESTED",
+      "detail": "No Jenkins deployment source evidence connected by this release"
+    },
+    {
+      "gate": "finance_erp_reconciliation",
+      "status": "NOT_TESTED",
+      "detail": "Requires authorized GL/ERP connector and independent validation"
+    },
+    {
+      "gate": "browser_accessibility_and_auth",
+      "status": "NOT_TESTED",
+      "detail": "Requires actual browser and supported user identity tests"
+    }
+  ],
+  "production_certified": false,
+  "build_ready": false
+}

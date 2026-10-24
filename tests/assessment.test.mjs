@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {CAPABILITIES,OBJECTIVES,assessTransformation} from '../src/transformation-assessment.js';
+const complete=(value=2)=>Object.fromEntries(CAPABILITIES.map(c=>[c.id,value]));
+test('all capability ratings are required',()=>assert.equal(assessTransformation({scores:{strategy:2}}).status,'INCOMPLETE'));
+test('no invented score on incomplete state',()=>assert.equal(assessTransformation({scores:{strategy:2}}).score,null));
+test('invalid score rejected',()=>assert.throws(()=>assessTransformation({scores:{...complete(),risk:9}})));
+test('unknown objective rejected',()=>assert.throws(()=>assessTransformation({scores:complete(),objective:'other'})));
+test('zero maturity equals zero, never pass',()=>assert.equal(assessTransformation({scores:complete(0)}).score,0));
+test('full maturity equals 100 but still self reported',()=>{const r=assessTransformation({scores:complete(4)});assert.equal(r.score,100);assert.equal(r.status,'ASSESSED_SELF_REPORTED')});
+test('objective fitment changes action ranking',()=>{const a=assessTransformation({scores:complete(1),objective:'quality'});const b=assessTransformation({scores:complete(1),objective:'growth'});assert.notDeepEqual(a.actions.map(x=>x.id),b.actions.map(x=>x.id))});
+test('results deterministic',()=>assert.deepEqual(assessTransformation({scores:complete()}),assessTransformation({scores:complete()})));
+test('frameworks are explicit per objective',()=>assert.ok(OBJECTIVES.every(x=>x.frameworks.length>0)));

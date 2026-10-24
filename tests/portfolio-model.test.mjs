@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validatePlan,scoreWSJF,analyzePortfolio,optimizePortfolio,DEMO} from '../src/portfolio-model.js';
+test('WSJF is deterministic',()=>assert.equal(scoreWSJF(DEMO.items[0]),53/8));
+test('orphan detection does not delete work',()=>{let p=analyzePortfolio(DEMO.items,DEMO.deps);assert.equal(p.orphaned.length,1);assert.equal(DEMO.items.length,4)});
+test('rejects duplicate IDs',()=>assert.throws(()=>validatePlan([DEMO.items[0],DEMO.items[0]])));
+test('rejects dependency cycles',()=>assert.throws(()=>validatePlan(DEMO.items,[{from:'F-101',to:'F-102'},{from:'F-102',to:'F-101'}])));
+test('rejects missing prerequisites',()=>assert.throws(()=>validatePlan(DEMO.items,[{from:'missing',to:'F-101'}])));
+test('rejects invalid size',()=>assert.throws(()=>validatePlan([{...DEMO.items[0],size:0}])));
+test('bounded optimization respects budget and dependency',()=>{const r=optimizePortfolio(DEMO.items,DEMO.deps,{budget:76,buffer:0,teamCapacities:DEMO.teamCapacities});assert.ok(r.cost<=76);assert.ok(!r.selected.includes('F-102')||r.selected.includes('F-101'));});
+test('budget zero yields empty plan',()=>assert.deepEqual(optimizePortfolio(DEMO.items,DEMO.deps,{budget:0,teamCapacities:DEMO.teamCapacities}).selected,[]));
+test('orphan exclusion is enforced',()=>assert.ok(!optimizePortfolio(DEMO.items,DEMO.deps,{budget:500,teamCapacities:DEMO.teamCapacities}).selected.includes('F-104')));
+test('rejects over 20 features',()=>assert.throws(()=>optimizePortfolio(Array.from({length:21},(_,i)=>({...DEMO.items[0],id:`X${i}`})),[],{budget:100})));
+test('bounded result repeatable',()=>{const a=()=>optimizePortfolio(DEMO.items,DEMO.deps,{budget:100,teamCapacities:DEMO.teamCapacities});assert.deepEqual(a(),a())});

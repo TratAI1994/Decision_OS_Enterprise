@@ -1,0 +1,15 @@
+/* Last-loaded, narrowly scoped contrast and overflow fixes. No business logic. */
+.ops-compact-hero{background:#fff!important;border:1px solid #dbe4ee!important;box-shadow:none!important;color:#142c45!important;min-height:0!important}
+.ops-compact-hero h1,.ops-compact-hero h2,.ops-compact-hero h3{color:#152b44!important;opacity:1!important;text-shadow:none!important}
+.ops-compact-hero p,.ops-compact-hero span{color:#4d627b!important;opacity:1!important}
+.ops-compact-hero .eyebrow{color:#1b69ab!important}
+.stageScroll{overflow-x:auto!important;scrollbar-width:thin!important;scrollbar-color:#aabdd1 #f2f6fa!important;overscroll-behavior-x:contain}
+.stageScroll .stages{display:grid!important;grid-auto-flow:column!important;grid-auto-columns:minmax(112px,1fr)!important;width:max-content!important;min-width:100%!important;gap:6px!important}
+.stageScroll .stage{color:#19344f!important;background:#fff!important;outline-offset:2px!important}
+.stageScroll .stage b,.stageScroll .stage small{color:#284764!important;opacity:1!important}
+.stageScroll .stage.active{background:#e6f2fe!important;border:2px solid #277ac1!important}
+.stageScroll .stage.active b,.stageScroll .stage.active small{color:#164f83!important}
+.main,.workspace,.shell{min-width:0!important}.guide{background:#fff!important}.guide h3,.guide h4,.guide strong{color:#142c45!important}.guide summary{color:#225c91!important}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #1b70b9!important;outline-offset:2px!important}
+@media(min-width:1350px){.stageScroll .stages{grid-auto-columns:minmax(116px,1fr)!important}}
+@media(max-width:800px){.stageScroll .stages{grid-auto-columns:120px!important}.ops-compact-hero{display:flex!important;flex-direction:column!important}}

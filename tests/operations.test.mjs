@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const operations=readFileSync(new URL('../src/OperationsConsole.jsx',import.meta.url),'utf8');
+const main=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+test('operational workspaces are exposed in sidebar',()=>{for(const n of ['Decision Ledger','Outcome Economics','Risk & Controls','DevSecOps & AIOps','Trust & Audit'])assert.ok(main.includes(n));});
+test('operational backend lookups are GET-only and no fictitious data',()=>{assert.match(operations,/method:'GET'/);assert.doesNotMatch(operations,/method:'POST'/);assert.match(operations,/No fictional decisions/);});
+test('record route requires v1 prefix and validates id',()=>{assert.match(operations,/Unsupported API route/);assert.match(operations,/Enter a valid record ID/)});
+test('collector credentials are not requested in browser',()=>{assert.match(operations,/Do not use collector signing secrets/);assert.match(operations,/type="password"/)});
+test('legacy workspaces preserved during parity migration',()=>{assert.match(operations,/127\.0\.0\.1:8502/)});
+test('compact operations landing replaces gradient marketing hero',()=>{assert.match(main,/ops-compact-hero/);assert.doesNotMatch(main,/<section className="hero">/)});

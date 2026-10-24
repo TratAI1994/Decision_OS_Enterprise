@@ -1,0 +1,16 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {programBoard,planningIndicators,relationshipIndex,answerPortfolioQuestion} from '../src/relationship-model.js';
+import {DEMO} from '../src/portfolio-model.js';import {DEMO_PI} from '../src/safe-execution-model.js';
+const board=()=>programBoard(DEMO.items,DEMO.deps,DEMO_PI);
+test('board nodes anchored in five iterations',()=>{let b=board();assert.equal(b.iterations,5);assert.ok(b.locations.has('F-101'))});
+test('real edges use explicit endpoints',()=>{let b=board();assert.equal(b.links[0].state,'ORDERED');assert.ok(b.links[0].fromPoint)});
+test('late prerequisite raises sequencing blocker',()=>{let p={...DEMO_PI,assignments:[{featureId:'F-101',iteration:5},{featureId:'F-102',iteration:1}]};assert.equal(programBoard(DEMO.items,DEMO.deps,p).blockers[0].state,'BLOCKED')});
+test('unscheduled predecessor never silently green',()=>{let p={...DEMO_PI,assignments:[{featureId:'F-102',iteration:1}]};assert.equal(programBoard(DEMO.items,DEMO.deps,p).links[0].state,'UNSCHEDULED')});
+test('cycle refused',()=>assert.throws(()=>programBoard(DEMO.items,[{from:'F-101',to:'F-102'},{from:'F-102',to:'F-101'}],DEMO_PI),/cycle/i));
+test('invalid iteration refused',()=>assert.throws(()=>programBoard(DEMO.items,DEMO.deps,DEMO_PI,0),/iteration/));
+test('actual flow metrics remain unavailable',()=>{let a=planningIndicators(DEMO.items,DEMO.deps,DEMO_PI,DEMO.teamCapacities);assert.equal(a.actualPredictabilityPct,null);assert.equal(a.actualFlowVelocity,null)});
+test('planning utilization comes from points and capacity',()=>{let a=planningIndicators(DEMO.items,DEMO.deps,DEMO_PI,DEMO.teamCapacities);assert.ok(a.plannedUtilizationPct>0)});
+test('focus initiative relationship never invents IDs',()=>{let rows=relationshipIndex(DEMO.items,DEMO.deps);assert.equal(rows.find(x=>x.id==='F-104').initiative,null)});
+test('oracle refuses financial conclusion without evidence',()=>assert.equal(answerPortfolioQuestion('Which initiative has negative ROI?',DEMO.items,DEMO.deps,DEMO_PI).classification,'INSUFFICIENT_EVIDENCE'));
+test('question resolves sequence blockers',()=>assert.equal(answerPortfolioQuestion('Which dependencies are blocked?',DEMO.items,DEMO.deps,DEMO_PI).classification,'PLANNING_ONLY'));
+test('question detects orphan',()=>assert.ok(answerPortfolioQuestion('Which items are unaligned?',DEMO.items,DEMO.deps,DEMO_PI).records.includes('F-104')));

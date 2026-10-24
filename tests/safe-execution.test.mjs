@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {DEMO_PI,evaluatePI,inspectAllocation} from '../src/safe-execution-model.js';
+import {DEMO} from '../src/portfolio-model.js';
+test('sample PI has no fabricated actual business value',()=>{const p=evaluatePI();assert.equal(p.predictability,null);assert.equal(p.hasActualEvidence,false)});
+test('PI identifies missing prerequisite',()=>{const p=evaluatePI(DEMO.items,DEMO.deps,{...DEMO_PI,assignments:[{featureId:'F-102',iteration:1}],objectives:[]});assert.equal(p.blockers.length,1)});
+test('PI detects incorrectly ordered dependency',()=>{const p=evaluatePI(DEMO.items,DEMO.deps,{...DEMO_PI,assignments:[{featureId:'F-101',iteration:3},{featureId:'F-102',iteration:1}],objectives:[]});assert.equal(p.blockers.length,1)});
+test('PI rejects duplicates and unknown records',()=>{assert.throws(()=>evaluatePI(DEMO.items,DEMO.deps,{...DEMO_PI,assignments:[{featureId:'BOGUS',iteration:1}]}));assert.throws(()=>evaluatePI(DEMO.items,DEMO.deps,{...DEMO_PI,assignments:[{featureId:'F-101',iteration:1},{featureId:'F-101',iteration:2}] }))});
+test('PI predictability is not calculated on partial actual BV',()=>{const p=evaluatePI(DEMO.items,DEMO.deps,{...DEMO_PI,objectives:DEMO_PI.objectives.map((o,i)=>({...o,actualBV:i===0?6:null}))});assert.equal(p.predictability,null)});
+test('PI sandbox cannot claim verified outcome even with user actual BV',()=>{const p=evaluatePI(DEMO.items,DEMO.deps,{...DEMO_PI,objectives:DEMO_PI.objectives.map(o=>({...o,actualBV:5}))});assert.equal(p.hasActualEvidence,false)});
+test('optimizer respects budget and capacity',()=>{const o=inspectAllocation();assert.ok(o.spent<=o.budget);assert.ok(o.byTeam.every(t=>t.used<=t.effective))});
+test('optimizer rejects invalid buffer',()=>assert.throws(()=>inspectAllocation(DEMO.items,DEMO.deps,{budget:100,buffer:1})));
+test('optimizer does not select orphan without explicit opt-in',()=>assert.ok(!inspectAllocation(DEMO.items,DEMO.deps,{budget:300}).selected.includes('F-104')));

@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {validateIdentifier,moneyText,outcomeProjection,riskProjection,sourceEvidenceProjection,evidenceCoverage,transformationLinks} from '../src/enterprise-domain.js';
+const component=readFileSync(new URL('../src/EnterpriseWorkspaces.jsx',import.meta.url),'utf8');
+const main=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+const client=readFileSync(new URL('../src/enterprise-client.js',import.meta.url),'utf8');
+test('real R8 money fields and finance variance are projected without source promotion',()=>{const x=outcomeProjection({summary:{currency:'USD',status:'self_reported',expected:'12000000.00',self_reported:'9500000.00',finance_verified:null,variance:null},integrity:{consistent:true},events:[]});assert.equal(x.attested,null);assert.equal(x.variance,null);assert.equal(x.status,'self_reported');assert.equal(x.integrity,'CONSISTENT')});
+test('negative finance variance sign is preserved',()=>{const x=outcomeProjection({summary:{status:'finance_attested',currency:'USD',expected:'12000000',finance_verified:'8700000',variance:'-3300000'},integrity:{consistent:true}});assert.match(moneyText(x.variance,x.currency),/^-\$3,300,000/)});
+test('malformed finance response fails closed',()=>assert.throws(()=>outcomeProjection({summary:{}}),/Malformed/));
+test('risk has a first-class frozen criteria projection and no fake criterion',()=>{assert.deepEqual(riskProjection({state:{baseline:{kill_criteria:[{metric:'churn',operator:'gt',threshold:5,window_days:30}]}}}).criteria.map(x=>x.metric),['churn']);assert.deepEqual(riskProjection({}).criteria,[])});
+test('collector matching does not become business validation or external anchor',()=>{const r=sourceEvidenceProjection({id:'a',tenant_id:'local-demo',source_system:'jenkins',trust_state:'AUTHENTICATED_COLLECTOR_CONTENT_MATCHED',business_validated:false,external_anchor_verified:false});assert.equal(r.businessVerified,false);assert.equal(r.anchored,false)});
+test('deployment provenance checklist remains incomplete when no explicit verified links',()=>assert.equal(evidenceCoverage({}).filter(x=>x.status==='NOT CONNECTED').length,8));
+test('risk lineage never marks typed IDs source verified',()=>{const x=transformationLinks({objective:'increase throughput',risk:'R-5'});assert.equal(x.find(y=>y.type==='Risk').status,'REFERENCE ENTERED — NOT VERIFIED')});
+test('record ID validation rejects injection or slash traversal',()=>{for(const x of ['../x','a/b','<script>',''])assert.throws(()=>validateIdentifier(x));assert.equal(validateIdentifier('D-12074'),'D-12074')});
+test('frontend uses bounded GET contracts and no browser auto-approval',()=>{assert.match(client,/method:'GET'/);assert.doesNotMatch(client,/method:'POST'/);assert.doesNotMatch(component,/fetch\([^)]*method:\s*['"]POST/);assert.match(component,/Human authorization remains mandatory/)});
+test('four functional workspaces and strategy workbench wired in navigation',()=>{for(const name of ['EnterpriseWorkspace','TransformationWorkbench','economics','risk','pipelines','assurance','workbench'])assert.ok(main.includes(name),name);assert.ok(!main.includes('<OperationsConsole groupId={view}'), 'generic inspector should not shadow dedicated views')});

@@ -1,28 +1,14 @@
 """Decision OS HTTP API. API keys are deployment bootstrap credentials, NOT SSO."""
 from __future__ import annotations
-
-import json
-import os
-import re
-import secrets
-
-from fastapi import Depends, FastAPI, Header, HTTPException
-from pydantic import BaseModel, Field
-from sqlalchemy import select, update
+import os,json,secrets,re
+from contextlib import asynccontextmanager
+from datetime import datetime,timezone
+from fastapi import FastAPI,Depends,HTTPException,Header,Response
+from pydantic import BaseModel,Field
+from sqlalchemy import select,update
 from sqlalchemy.orm import Session
-
-from .core import REQUIRED, STAGES, descendants, fingerprint, optimize, states
-from .db import (
-    Approval,
-    Audit,
-    Base,
-    Benefit,
-    Evidence,
-    Initiative,
-    WorkspaceDocument,
-    engine_for,
-    session_factory,
-)
+from .core import STAGES,REQUIRED,states,descendants,fingerprint,optimize
+from .db import Base,Initiative,Evidence,Approval,Benefit,Audit,WorkspaceDocument,engine_for,session_factory
 
 _engine=None; _sessions=None
 
@@ -314,6 +300,7 @@ def initiative_critical_path(iid:str,days_per_open_stage:int=8,actor:Identity=De
     if not 1<=days_per_open_stage<=90:raise HTTPException(422,'Duration must be 1-90 days')
     find_initiative(db,actor,iid)
     ev,ap=snapshot(db,actor,iid);status=states(ev,ap)
+    from .core import STAGES
     early_start={};early_end={};days={}
     for name,deps in STAGES.items():
         days[name]=0 if status[name]['status']=='complete' else days_per_open_stage
@@ -338,19 +325,17 @@ def initiative_critical_path(iid:str,days_per_open_stage:int=8,actor:Identity=De
 
 # R1.1–R3 additive intelligence API. Import models before configure()/create_all().
 from .intelligence import build_router
-
 app.include_router(build_router(identity,session,require,events,find_initiative))
 
 # R4 ETES models must be imported before application startup creates schema.
 from .execution import build_router as build_etes_router
-
 app.include_router(build_etes_router(identity,session,require,events,find_initiative))
 
 # R5.0: explicit, scoped funding-decision lookup for reactive forms.
 # This reuses the R1 decision model; it does not infer decisions from execution tasks.
 @app.get('/v1/initiatives/{initiative_id}/funding-decisions',tags=['AI Trust R5'])
 def funding_decisions_for_initiative(initiative_id:str,actor:Identity=Depends(identity),db:Session=Depends(session)):
-    from .intelligence import DecisionRecord, decision_json
+    from .intelligence import DecisionRecord,decision_json
     find_initiative(db,actor,initiative_id)
     matches=db.scalars(select(DecisionRecord).where(
         DecisionRecord.tenant_id==actor.tenant,
@@ -359,31 +344,34 @@ def funding_decisions_for_initiative(initiative_id:str,actor:Identity=Depends(id
     return [decision_json(d) for d in matches]
 
 # R5.0/R5.1 — additive AI Trust Office; models registered before app startup.
+from .models import AIRiskAssessment, AIControlEvidence, RedTeamFinding
 from .trust import build_router as build_trust_router
-
 app.include_router(build_trust_router(identity,session,require,events,find_initiative))
 
 # R5.2–R5.4 additive, tenant-scoped decision governance routes.
 from .decision_governance import build_router as build_decision_governance_router
-
 app.include_router(build_decision_governance_router(identity,session,require,events,find_initiative))
 
 # R5.5 additive strategy-to-outcomes models. Registered before configure() startup.
 from .strategy_outcomes import build_router as build_strategy_router
-
 app.include_router(build_strategy_router(identity,session,require,events,find_initiative))
 
 # R5.6 additive, reviewer-bound evaluation snapshots.
 from .decision_evaluation import build_router as build_evaluation_router
-
 app.include_router(build_evaluation_router(identity,session,require,events,find_initiative))
 
 # R7: independent decision event attestation and deterministic replay.
 from .decision_events import build_router as build_decision_events_router
-
 app.include_router(build_decision_events_router(identity,session,require))
 
 # R8 finance outcome events: independent finance attestation only.
 from .outcome_economics import build_router as build_outcome_router
-
 app.include_router(build_outcome_router(identity,session,require))
+
+# R9.5 additive trust evidence endpoints
+from .trust_foundation import build_router as build_r95_trust_router
+app.include_router(build_r95_trust_router(identity,session,require))
+
+# R9.9 authenticated ingestion
+from .authenticated_ingestion import build_router as authenticated_source_router
+app.include_router(authenticated_source_router(identity, session, require))
